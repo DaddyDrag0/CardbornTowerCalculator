@@ -1,0 +1,1 @@
+(async()=>{try{const f=['app-1.txt','app-2.txt','app-3.txt','app-4.txt'],p=await Promise.all(f.map(async x=>{const r=await fetch(`./${x}?v=6`,{cache:'no-store'});if(!r.ok)throw Error(x);return r.text()}));(0,eval)(p.join(''))}catch(e){console.error(e);document.getElementById('app').innerHTML='<div class="loading">Failed to load Cardborn calculator.</div>'}})();
