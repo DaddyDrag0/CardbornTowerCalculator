@@ -1,0 +1,155 @@
+// Combat accuracy fixes for passive/team abilities used in Infinite Dungeon.
+function PATCH_livingWith(team,abilityName){
+  return (team||[]).filter(x=>x&&!x.dead&&x.hp>0&&!x.silenced&&x.ability?.name===abilityName);
+}
+
+// Full Fabled values needed by the current Infinite meta decks/speedrun cards.
+// Fabled is automatic whenever the card's Fabled border is selected.
+Object.assign(FABLED,{
+  'Sacred Rejuvenation':"Pass on 50% of this card's health and damage to the next card and increase both by 10%",
+  'Age of Beasts':"Increase health by 120%. Take the damage dealt to the card before this one, split it to this card, and reduce the damage by 20%. On death, revive with 50% of max health",
+  "Heaven's Threshold":"While this card is alive, the first attack against each ally, and herself, is reduced by 60%. Every time this effect activates, this card gains 18% health and damage. When this card enters battle, all allies gain 18% health.",
+  'Blinding Dive':'After every attack, have a 30% chance to do an extra 100% damage and stun the opponent',
+  'Critical Mass':'Deal 4x damage, but lose 25% of attack every turn. If this card defeats an enemy, restore 25% of its lost attack.',
+  'Haunting Presence':"While this card is alive, all enemy cards deal 22% less damage, and all allied cards heal 8% of their max health at the start of each turn.",
+  'Celestial Smite':'Attack twice with the second hit dealing 80% more damage.'
+});
+
+// Specter aura + Theodora's first-hit protection/growth.
+const PATCH_baseIncomingCombat=incoming;
+incoming=function(t,a,d,r,ctx,ignore){
+  let amount=Math.max(0,Math.floor(d||0));
+  if(t&&a&&a.side!==t.side&&ctx){
+    const defenders=ctx.team(t)||[];
+    // Haunting Presence: while Specter is alive, enemy damage is reduced.
+    if(a.ability?.name!=='Perfect Strike'){
+      for(const specter of PATCH_livingWith(defenders,'Haunting Presence')){
+        amount=Math.max(0,Math.floor(amount*(1-p(specter,0,.15))));
+      }
+    }
+    // Heaven's Threshold: each living Theo protects each ally's first direct attack once.
+    if(!ignore&&a.ability?.name!=='Perfect Strike'){
+      for(const theo of PATCH_livingWith(defenders,"Heaven's Threshold")){
+        if(!theo._heavenProtected)theo._heavenProtected=new Set();
+        if(!theo._heavenProtected.has(t)){
+          theo._heavenProtected.add(t);
+          amount=Math.max(0,Math.floor(amount*(1-p(theo,0,.45))));
+          buff(theo,p(theo,1,.12));
+        }
+      }
+    }
+  }
+  return PATCH_baseIncomingCombat(t,a,amount,r,ctx,ignore);
+};
+
+// Specter's heal aura triggers at the start of every battle turn while it remains alive.
+const PATCH_baseTurnStartCombat=turnStart;
+turnStart=function(f,t,own,foes,r,ctx){
+  const healAura=team=>{
+    for(const specter of PATCH_livingWith(team,'Haunting Presence')){
+      for(const ally of alive(team))heal(ally,Math.floor(ally.max*p(specter,1,.05)));
+    }
+  };
+  healAura(own);
+  healAura(foes);
+  return PATCH_baseTurnStartCombat(f,t,own,foes,r,ctx);
+};
+
+// Fabled Critical Mass uses 4x instead of 3x, still loses 25% ATK per turn.
+const PATCH_turnStartWithAuras=turnStart;
+turnStart=function(f,t,own,foes,r,ctx){
+  if(f?.flags?.fabled&&f.ability?.name==='Critical Mass'&&!f.silenced){
+    const oldSilenced=f.silenced;
+    f.silenced=true;
+    const out=PATCH_turnStartWithAuras(f,t,own,foes,r,ctx);
+    f.silenced=oldSilenced;
+    const before=Math.max(1,f.atk);
+    out.mult*=4;
+    f.atk=Math.max(1,Math.floor(f.atk*.75));
+    f._criticalLost=(f._criticalLost||0)+Math.max(0,before-f.atk);
+    return out;
+  }
+  return PATCH_turnStartWithAuras(f,t,own,foes,r,ctx);
+};
+
+// The Last Mammoth splits damage aimed at the card directly before it.
+// Fabled Mammoth also reduces the split damage by 20%.
+const PATCH_baseDamageCombat=damage;
+let PATCH_mammothSplitGuard=false;
+damage=function(a,t,d,r,ctx,ignore=false){
+  if(!PATCH_mammothSplitGuard&&a&&t&&a.side!==t.side&&d>0&&ctx){
+    const team=ctx.team(t)||[];
+    const mammoth=team.find(x=>x&&!x.dead&&x.hp>0&&!x.silenced&&x.index===t.index+1&&x.ability?.name==='Age of Beasts');
+    if(mammoth){
+      const total=mammoth.flags?.fabled?Math.max(0,Math.floor(d*.80)):Math.max(0,Math.floor(d));
+      const first=Math.ceil(total/2),second=Math.floor(total/2);
+      PATCH_mammothSplitGuard=true;
+      const dealtFront=PATCH_baseDamageCombat(a,t,first,r,ctx,ignore);
+      // This is indirect split damage, not a second direct attack on Mammoth.
+      const dealtMammoth=PATCH_baseDamageCombat(a,mammoth,second,r,ctx,true);
+      PATCH_mammothSplitGuard=false;
+      return dealtFront+dealtMammoth;
+    }
+  }
+  return PATCH_baseDamageCombat(a,t,d,r,ctx,ignore);
+};
+
+// Divine Archmage passes stats forward. Fabled removes the proc chance and adds +10% stats.
+// Fabled Mammoth revives at 50% (the normal parser would otherwise mistake its 20% split reduction for the revive value).
+const PATCH_baseDieCombat=die;
+die=function(f,k,team,foes,r,ctx){
+  if(f&&f.hp<=0&&!f.dead&&!f.silenced&&f.flags?.fabled&&f.ability?.name==='Age of Beasts'&&!f.revives){
+    f.revives++;
+    f.hp=Math.max(1,Math.floor(f.max*.50));
+    return false;
+  }
+  const killed=PATCH_baseDieCombat(f,k,team,foes,r,ctx);
+  if(killed&&f&&!f.silenced&&f.ability?.name==='Sacred Rejuvenation'){
+    const proc=f.flags?.fabled?true:r()<.50;
+    if(proc){
+      const nextCard=(team||[]).filter(x=>x&&!x.dead&&x.hp>0&&x.index>f.index).sort((a,b)=>a.index-b.index)[0];
+      if(nextCard){
+        const addHp=Math.max(0,Math.floor(f.max*.50)),addAtk=Math.max(0,Math.floor(f.atk*.50));
+        nextCard.max+=addHp;
+        nextCard.hp+=addHp;
+        nextCard.atk+=addAtk;
+        if(f.flags?.fabled)buff(nextCard,.10);
+      }
+    }
+  }
+  return killed;
+};
+
+// Fabled Griffin uses its upgraded 30% proc / +100% extra hit rather than the normal 20% / +40% version.
+// Fabled Abomination restores 25% of accumulated lost ATK on a kill.
+const PATCH_baseAfterCombat=after;
+after=function(f,t,dealt,own,foes,r,ctx,killed){
+  if(f?.flags?.fabled&&f.ability?.name==='Blinding Dive'&&!f.silenced){
+    const oldSilenced=f.silenced;
+    f.silenced=true;
+    PATCH_baseAfterCombat(f,t,dealt,own,foes,r,ctx,killed);
+    f.silenced=oldSilenced;
+    if(t&&!t.dead&&r()<.30){
+      damage(f,t,Math.floor(f.atk),r,ctx);
+      t.skip++;
+    }
+    return;
+  }
+  PATCH_baseAfterCombat(f,t,dealt,own,foes,r,ctx,killed);
+  if(f?.flags?.fabled&&f.ability?.name==='Critical Mass'&&killed&&f._criticalLost>0){
+    const restore=Math.max(1,Math.floor(f._criticalLost*.25));
+    f.atk+=restore;
+    f._criticalLost=Math.max(0,f._criticalLost-restore);
+  }
+};
+
+// Real-run timing calibration: 2.5 seconds of fixed floor overhead + the simulated battle interactions.
+// This makes a Celestial Fury speedrun naturally faster because its second hit carries into the next enemy
+// inside the same attack turn, reducing the number of enemy turns/actions the simulator records.
+PATCH_totalRunSeconds=function(run){
+  if(!run)return 0;
+  const reached=Math.max(state.start,Math.min(PATCH_MAX_FLOOR,Math.floor(Number(run.death<=PATCH_MAX_FLOOR?run.death:run.cleared)||state.start)));
+  const floors=Math.max(1,reached-state.start+1);
+  const interaction=runSeconds({actions:Number(run.actions)||0,changes:Number(run.changes)||0});
+  return floors*2.5+interaction;
+};

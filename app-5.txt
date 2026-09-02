@@ -1,0 +1,162 @@
+// Runtime fixes loaded inside the main Cardborn IIFE, after app-3 and before app-4.
+const PATCH_MAX_FLOOR=50000;
+const PATCH_FLOOR_OVERHEAD_SECONDS=2;
+
+// Confirmed Infinite Dungeon base enemy scaling.
+infiniteStats=function(floor){
+  const f=Math.max(1,Math.min(PATCH_MAX_FLOOR,Math.floor(Number(floor)||1)));
+  const hp=Math.max(1,Math.floor(200*Math.pow((f+25)/25,2.63)));
+  return{hp,atk:Math.max(1,Math.floor(hp/2))};
+};
+
+function PATCH_cardImageIds(c){
+  const fromCard=[aid(c?.croppedImageId),aid(c?.imageId)].filter(Boolean);
+  if(fromCard.length)return fromCard;
+  return(window.CARDBORN_IMAGE_IDS?.[c?.name]||[]).filter(Boolean);
+}
+function PATCH_imageSources(c){
+  if(!c)return[];
+  const ids=PATCH_cardImageIds(c),map=window.CARDBORN_THUMBNAILS||{},out=[];
+  for(const id of ids)if(map[id])out.push(map[id]);
+  for(const id of ids)out.push(`https://www.roblox.com/asset-thumbnail/image?assetId=${id}&width=420&height=420&format=png`);
+  return[...new Set(out)];
+}
+window.__cardbornImgFallback=function(el){
+  try{
+    const list=JSON.parse(el.dataset.fallbacks||'[]');
+    const next=list.shift();
+    el.dataset.fallbacks=JSON.stringify(list);
+    if(next){el.src=next;return}
+  }catch(_){}
+  el.style.display='none';
+};
+img=function(c){return PATCH_imageSources(c)[0]||''};
+portrait=function(c,cls='mini-portrait'){
+  const srcs=PATCH_imageSources(c),u=srcs[0]||'',fallbacks=esc(JSON.stringify(srcs.slice(1))),l=esc((c?.name||'?')[0]);
+  return`<span class="${cls}"><span class="fallback-letter">${l}</span>${u?`<img src="${u}" data-fallbacks="${fallbacks}" alt="" loading="lazy" onerror="window.__cardbornImgFallback(this)">`:''}</span>`;
+};
+
+const PATCH_baseSave=save;
+save=function(){
+  state.cap=PATCH_MAX_FLOOR;
+  PATCH_baseSave();
+};
+
+const PATCH_baseLoad=load;
+load=function(){
+  PATCH_baseLoad();
+  state.start=Math.max(1,Math.min(PATCH_MAX_FLOOR,Math.floor(Number(state.start)||1)));
+  state.cap=PATCH_MAX_FLOOR;
+};
+
+// Timing model: 2 seconds of fixed floor transition/overhead per floor,
+// plus the battle interaction time produced by the simulator. Only the
+// interaction portion is affected by the selected battle-speed multiplier.
+function PATCH_totalRunSeconds(run){
+  if(!run)return 0;
+  const reached=Math.max(state.start,Math.min(PATCH_MAX_FLOOR,Math.floor(Number(run.death<=PATCH_MAX_FLOOR?run.death:run.cleared)||state.start)));
+  const floors=Math.max(1,reached-state.start+1);
+  const interaction=runSeconds({actions:Number(run.actions)||0,changes:Number(run.changes)||0});
+  return floors*PATCH_FLOOR_OVERHEAD_SECONDS+interaction;
+}
+const PATCH_baseSimulate=simulate;
+simulate=function(ti,seed){
+  const run=PATCH_baseSimulate(ti,seed);
+  run.seconds=PATCH_totalRunSeconds(run);
+  return run;
+};
+const PATCH_baseSummarize=summarize;
+summarize=function(a){
+  const r=PATCH_baseSummarize(a);
+  for(const run of r.runs)run.seconds=PATCH_totalRunSeconds(run);
+  const ordered=[...r.runs].sort((x,y)=>x.cleared-y.cleared||x.seconds-y.seconds);
+  const medianRun=ordered[Math.floor((ordered.length-1)*.5)];
+  r.seconds=medianRun?medianRun.seconds:0;
+  return r;
+};
+
+// Depths-style result summary: median +/-15%, median floor, and clear time only.
+result=function(t,i){
+  const r=t.result;if(!r)return'';
+  const med=Math.max(1,Math.min(PATCH_MAX_FLOOR,Math.round(Number(r.med)||1)));
+  const estLow=Math.max(1,Math.round(med*.85));
+  const estHigh=Math.min(PATCH_MAX_FLOOR,Math.round(med*1.15));
+  const ordered=[...r.runs].sort((x,y)=>x.cleared-y.cleared||x.seconds-y.seconds);
+  const medianRun=ordered[Math.floor((ordered.length-1)*.5)];
+  const clearSeconds=medianRun?PATCH_totalRunSeconds(medianRun):0;
+  const enemyCounts={};
+  for(const run of r.runs)for(const n of run.last||[])enemyCounts[n]=(enemyCounts[n]||0)+1;
+  const common=Object.entries(enemyCounts).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,6);
+  const endingHtml=common.length?`<div class="ending-enemies"><span>Most common losing-floor enemies</span><div class="enemy-chips">${common.map(([n,c])=>`<i>${esc(n)} <b>×${c}</b></i>`).join('')}</div></div>`:'';
+  return`<section class="result-card ${i===state.team?'active-result':''}"><div class="result-head"><div><span class="kicker">TEAM ${i+1}</span><h4>Infinite Dungeon</h4></div><span class="verified">${r.runCount} RUN${r.runCount===1?'':'S'}</span></div><div class="result-metrics depth-summary"><div><span>Estimated Floor Range</span><b>${estLow.toLocaleString()} – ${estHigh.toLocaleString()}</b></div><div><span>Median Floor</span><b>${med.toLocaleString()}</b></div><div><span>Time Cleared</span><b>${time(clearSeconds)}</b></div></div><div class="result-meta"><span>${r.runCount} simulated run${r.runCount===1?'':'s'}</span><span>${state.speed}× battle speed</span></div><div class="floor-strip">${r.runs.map((x,j)=>`<span role="button" tabindex="0" data-debug-team="${i}" data-debug-run="${j}" title="Run ${j+1}${x.death<=state.cap?' · lost Floor '+x.death:' · floor cap reached'}${x.last?.length?' · '+x.last.join(' / '):''} · click for debug">${x.death<=state.cap?x.death:x.cleared}</span>`).join('')}</div>${endingHtml}</section>`;
+};
+
+const PATCH_baseBind=bind;
+bind=function(){
+  PATCH_baseBind();
+
+  let searchNonce='';
+  try{searchNonce=crypto.randomUUID()}catch(_){searchNonce=String(Date.now())+Math.random().toString(36).slice(2)}
+  for(const [i,input] of [root.querySelector('#search'),root.querySelector('#bsearch')].entries()){
+    if(!input)continue;
+    input.setAttribute('autocomplete','off');
+    input.setAttribute('autocapitalize','off');
+    input.setAttribute('autocorrect','off');
+    input.setAttribute('spellcheck','false');
+    input.setAttribute('data-form-type','other');
+    input.setAttribute('name',`cardborn-no-history-${i}-${searchNonce}`);
+  }
+
+  const startInput=root.querySelector('#start');
+  if(startInput){
+    startInput.max=String(PATCH_MAX_FLOOR);
+    startInput.addEventListener('change',e=>{
+      e.preventDefault();e.stopImmediatePropagation();
+      state.start=Math.max(1,Math.min(PATCH_MAX_FLOOR,Math.floor(Number(e.currentTarget.value)||1)));
+      state.cap=PATCH_MAX_FLOOR;
+      save();render();
+    },true);
+  }
+
+  const capInput=root.querySelector('#cap');
+  if(capInput){
+    capInput.value=String(PATCH_MAX_FLOOR);
+    capInput.min=String(PATCH_MAX_FLOOR);
+    capInput.max=String(PATCH_MAX_FLOOR);
+    capInput.readOnly=true;
+    capInput.disabled=true;
+    capInput.title='Infinite Dungeon cap is locked at Floor 50,000';
+  }
+
+  root.querySelectorAll('[data-card]').forEach(button=>button.addEventListener('click',e=>{
+    e.preventDefault();e.stopImmediatePropagation();
+    const current=cur().cards[state.slot]||{flags:flags()};
+    const keptFlags={...flags(),...(current.flags||{})};
+    cur().cards[state.slot]={name:button.dataset.card,flags:keptFlags};
+    cur().result=null;
+    const n=cur().cards.findIndex((x,i)=>!x.name&&i>state.slot);
+    if(n>=0)state.slot=n;
+    save();render();
+  },true));
+};
+
+const PATCH_baseRender=render;
+render=function(){
+  state.cap=PATCH_MAX_FLOOR;
+  PATCH_baseRender();
+};
+
+const PATCH_style=document.createElement('style');
+PATCH_style.textContent=`
+.library-list,.floor-strip,.dbg-scroll,.run-log-grid{scrollbar-width:thin;scrollbar-color:var(--accent) var(--surface-2)}
+.library-list::-webkit-scrollbar,.floor-strip::-webkit-scrollbar,.dbg-scroll::-webkit-scrollbar,.run-log-grid::-webkit-scrollbar{width:10px;height:10px}
+.library-list::-webkit-scrollbar-track,.floor-strip::-webkit-scrollbar-track,.dbg-scroll::-webkit-scrollbar-track,.run-log-grid::-webkit-scrollbar-track{background:var(--surface-2);border-radius:999px}
+.library-list::-webkit-scrollbar-thumb,.floor-strip::-webkit-scrollbar-thumb,.dbg-scroll::-webkit-scrollbar-thumb,.run-log-grid::-webkit-scrollbar-thumb{background:var(--accent);border:2px solid var(--surface-2);border-radius:999px}
+.library-list::-webkit-scrollbar-thumb:hover,.floor-strip::-webkit-scrollbar-thumb:hover,.dbg-scroll::-webkit-scrollbar-thumb:hover,.run-log-grid::-webkit-scrollbar-thumb:hover{background:var(--accent-bright,var(--accent))}
+#cap:disabled{opacity:.8;cursor:not-allowed;color:var(--text-main);-webkit-text-fill-color:var(--text-main)}
+.result-metrics.depth-summary{grid-template-columns:1.25fr 1fr 1fr}
+.result-metrics.depth-summary b{font-size:18px}
+.result-metrics.depth-summary div:first-child b{white-space:nowrap}
+@media(max-width:760px){.result-metrics.depth-summary{grid-template-columns:1fr}.result-metrics.depth-summary div:first-child b{white-space:normal}}
+`;
+document.head.appendChild(PATCH_style);

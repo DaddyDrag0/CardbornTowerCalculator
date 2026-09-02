@@ -1,0 +1,99 @@
+function FULL_postDamageHooks(a,t,real,r,ctx){
+  if(!t||real<0)return;FULL_init(t);FULL_init(a);const team=FULL_team(t,ctx),foes=FULL_enemyTeam(t,ctx);
+  if(real>0){
+    t._damageTakenCount=(t._damageTakenCount||0)+1;
+    if(FULL_enabled(t,ctx)&&t.ability?.name==='Royal Decree: Silence')t._royalHits=(t._royalHits||0)+1;
+    if(FULL_enabled(t,ctx)&&t.ability?.name==='Furnace Heart')for(const x of FULL_alive(team))if(x!==t)x.atk=Math.floor(x.atk*(1+(FULL_fab(t)?.20:.15)));
+    if(FULL_enabled(t,ctx)&&t.ability?.name==='Flow State'){t.dr=Math.min(FULL_fab(t)?.60:.50,(t.dr||0)+(FULL_fab(t)?.15:.10));t._flowStacks=(t._flowStacks||0)+1;if(t._flowStacks>=(FULL_fab(t)?4:5))t._flowOn=true}
+    if(FULL_enabled(t,ctx)&&t.ability?.name==='Rejection of Love'&&a){const q=FULL_fab(t)?.30:.25;FULL_effectDamage(t,a,Math.floor((t._heartOriginal||t._originalMax)*q),r,ctx,true,{retaliate:true});a.atk=Math.max(1,Math.floor(a.atk*(1-(FULL_fab(t)?.15:.10))))}
+    if(FULL_enabled(t,ctx)&&t.ability?.name==='Void Devastation')t.stored=Math.min(Math.floor(t.max*(FULL_fab(t)?4:3)),(t.stored||0)+real);
+    if(FULL_enabled(t,ctx)&&t.ability?.name==='Dark Ritual'&&!t._darkRitual&&t.hp/t.max<(FULL_fab(t)?.75:.60)){t._darkRitual=true;const total=team.filter(x=>x.dead).reduce((s,x)=>s+(x.atk||0),0);t.atk+=Math.floor(total*(FULL_fab(t)?.65:.50))}
+    if(FULL_enabled(t,ctx)&&t.ability?.name==='Immortal Scales'&&!t._scalesTriggered&&t.hp/t.max<(FULL_fab(t)?.60:.50)){t._scalesTriggered=true;heal(t,Math.floor(t.max*(FULL_fab(t)?.65:.50)))}
+    if(FULL_enabled(t,ctx)&&t.ability?.name==='Behemoth’s Wrath'&&FULL_fab(t)&&!t._behemothRage&&t.hp/t.max<.50){t._behemothRage=true;t.atk=Math.floor(t.atk*1.25)}
+    if(FULL_enabled(t,ctx)&&t.ability?.name==='Unshaken Form'&&FULL_fab(t)&&t.hp>0){t.atk=Math.floor(t.atk*1.15);heal(t,Math.floor(t.max*.05))}
+    if(t._earthGrowthReady&&!t._earthTriggered){t._earthTriggered=true;buffHp(t,.10)}
+    if(a?._umbralMark?.source===t&&FULL_enabled(t,ctx)){const m=a._umbralMark;m.hits=(m.hits||0)+1;if(m.hits>=2){FULL_stun(a,1);t._umbralNext=FULL_fab(t)?3.5:2;a.atk+=m.lostAtk||0;a._umbralMark=null}}
+    for(const g of FULL_alive(team).filter(x=>FULL_enabled(x,ctx)&&x.ability?.name==='Arctic Giant’s Protection')){const prev=FULL_prevAny(g,team);if(prev===t&&!g._arcticTriggered&&t.hp/t.max<(FULL_fab(g)?.50:.40)){g._arcticTriggered=true;t.hp=t.max;FULL_freeze(a,1);if(FULL_fab(g))FULL_addBlock(t,1)}}
+  }
+}
+
+damage=function(a,t,d,r,ctx,ignore=false,meta={}){
+  if(!t||t.dead||t.hp<=0||d<=0)return 0;FULL_CONTEXT=ctx;FULL_init(a);FULL_init(t);
+  if(!ignore&&!meta?.mammothSplit&&meta?.direct!==false&&a&&a.side!==t.side){const tm=FULL_team(t,ctx),m=tm.find(x=>x&&!x.dead&&x.hp>0&&x.index===t.index+1&&FULL_enabled(x,ctx)&&x.ability?.name==='Age of Beasts');if(m){const total=FULL_fab(m)?Math.floor(d*.80):Math.floor(d),front=Math.ceil(total/2),back=Math.floor(total/2);const d1=damage(a,t,front,r,ctx,false,{...meta,mammothSplit:true});const d2=back>0?damage(a,m,back,r,ctx,false,{...meta,mammothSplit:true,direct:false}):0;if(ctx)ctx._lastDamageTarget=t;return d1+d2}}
+  const redirected=FULL_redirect(a,t,Math.floor(d),r,ctx,ignore,meta);t=redirected.target||t;let amount=redirected.damage;if(redirected.blocked||amount<=0)return 0;
+  const before=t.hp,real=incoming(t,a,amount,r,ctx,ignore,meta);t.hp-=real;t.hits=(t.hits||0)+1;if(ctx){ctx._lastDamageTarget=t;ctx._lastDamageRaw=amount;ctx._lastDamageReal=real}FULL_postDamageHooks(a,t,real,r,ctx);
+  return Math.max(0,before-Math.max(0,t.hp));
+};
+
+function FULL_afterAttackGrowth(f,t,dealt,own,foes,r,ctx,killed,meta={}){
+  if(!f||!FULL_enabled(f,ctx))return;FULL_init(f);const n=f.ability.name;
+  if(n==='Lich’s Curse'&&t&&!t.dead){const cut=Math.max(0,Math.floor(t.atk*.10));t.atk=Math.max(1,t.atk-cut);if(FULL_fab(f))f.atk+=Math.floor(cut*.75)}
+  else if(n==='Blinding Dive'&&t&&!t.dead&&r()<(FULL_fab(f)?.30:.20)){FULL_effectDamage(f,t,Math.floor(f.atk*(FULL_fab(f)?1:.40)),r,ctx);FULL_stun(t,1)}
+  else if(n==='Vampiric Drain')heal(f,Math.floor(f.atk*(FULL_fab(f)?.60:.50)));
+  else if(n==='Winter’s Grasp'&&t){FULL_stealStats(f,t,FULL_fab(f)?.10:.07,FULL_fab(f)?.10:.07,FULL_fab(f)?3:2.5,'winter');if(r()<(FULL_fab(f)?.30:.20))FULL_freeze(t,1)}
+  else if(n==='Festering Edge'&&t){const cut=Math.min(t.max-1,Math.floor(f.atk*(FULL_fab(f)?.75:.50)));t.max=Math.max(1,t.max-cut);t.hp=Math.min(t.hp,t.max);f.atk=Math.floor(f.atk*(1+(FULL_fab(f)?.35:.25)));if(FULL_fab(f)&&killed)f._festeringCarry=(f._festeringCarry||0)+Math.floor(cut*.50)}
+  else if(n==='Withering Feast'&&t){t.max=Math.max(1,t.max-Math.min(t.max-1,dealt));t.hp=Math.min(t.hp,t.max)}
+  else if(n==='Between Worlds'){const e=pick(r,FULL_alive(foes).filter(x=>x!==t));if(e){const res=FULL_effectDamage(f,e,Math.floor(f.atk*.35),r,ctx);if(res.killed)f._betweenExtra=(f._betweenExtra||0)+1}}
+  else if(n==='Taxed'&&FULL_fab(f))heal(f,Math.floor(dealt*.20));
+  else if(n==='Cursed Forge')for(const x of FULL_alive(own))buff(x,FULL_fab(f)?.07:.05);
+  else if(n==='Mind Fracture'&&t&&!t.dead&&r()<(FULL_fab(f)?.25:.15))t._confused={mult:FULL_fab(f)?1:.80};
+  else if(n==='Amethyst Armor'){const max=FULL_fab(f)?.45:.35;f.dr=Math.min(max,(f.dr||0)+.05)}
+  else if(n==='Flow State'){f.atk=Math.floor(f.atk*(1+(FULL_fab(f)?.25:.20)));FULL_cleanseOne(f);f._flowStacks=(f._flowStacks||0)+1;if(f._flowStacks>=(FULL_fab(f)?4:5))f._flowOn=true;if(f._flowOn)heal(f,Math.floor(dealt*(FULL_fab(f)?.35:.30)))}
+  else if(n==='Assassin’s Blizzard'&&FULL_fab(f)&&meta.targetWasFrozen)heal(f,Math.floor(dealt*.20));
+  else if(n==='Perfect Strike'&&FULL_fab(f)){f._perfectHits=(f._perfectHits||0)+1;if(f._perfectHits%2===0)FULL_addBlock(f,1)}
+  if(n==='Savage Fury'&&killed){f.atk=Math.floor(f.atk*(1+(FULL_fab(f)?.20:.15)));if(FULL_fab(f)){if(f.kills>=2)f._savageLife=.10;if(f.kills>=3&&!f._savageShield){f._savageShield=true;FULL_addBlock(f,1)}}}
+  if(f._savageLife&&dealt)heal(f,Math.floor(dealt*f._savageLife));
+}
+
+after=function(f,t,dealt,own,foes,r,ctx,killed,meta={}){corrPost(f,t,dealt,killed);FULL_afterAttackGrowth(f,t,dealt,own,foes,r,ctx,killed,meta)};
+
+function FULL_passCrown(f,team){if(!f._crownPct)return;const next=FULL_next(f,team);if(!next)return;const loss=FULL_fab(f)?.15:.10,nextPct=Math.max(0,f._crownPct-loss);if(nextPct){next._crownPct=nextPct;buff(next,nextPct)}}
+function FULL_triggerRevenants(deadAlly,team,r){for(const rev of team.filter(x=>x!==deadAlly&&x.dead&&x.ability?.name==='Undying Grudge')){if(rev._grudgeDone)continue;const chance=FULL_fab(rev)?Math.min(.80,rev._reviveChance||.50):.35;if(r()<chance){rev.dead=false;rev.hp=Math.max(1,Math.floor(rev.max*(FULL_fab(rev)?.75:.50)));rev._entered=false;if(FULL_fab(rev))rev.atk=Math.floor(rev.atk*1.25);rev._reviveChance=.50}else if(FULL_fab(rev))rev._reviveChance=Math.min(.80,(rev._reviveChance||.50)+.15)}}
+function FULL_processCurseDeath(f){if(!f?._decayCurse)return;const source=f._decayCurse.source;if(source&&!source.dead&&source.hp>0){heal(source,Math.floor(source.max*(FULL_fab(source)?.35:.20)));FULL_addBlock(source,1);if(FULL_fab(source))source.atk=Math.floor(source.atk*1.20)}f._decayCurse=null}
+
+function die(f,k,team,foes,r,ctx){
+  if(!f||f.dead||f.hp>0)return false;FULL_CONTEXT=ctx;FULL_init(f);FULL_init(k);const deathEffectsEnabled=FULL_deathEnabled(f,ctx);
+  if(deathEffectsEnabled){const n=f.ability.name;
+    if(n==='Soul Reservoir'&&f.revives<2){f.revives++;if(r()<.60){f.hp=Math.max(1,Math.floor(f.max*.50));FULL_stun(k,1);return false}if(FULL_fab(f)){f.hp=Math.max(1,Math.floor(f.max*.20));return false}}
+    if(n==='Shadow Rebirth'&&!f._shadowRebirth){f._shadowRebirth=true;f.hp=f.max;if(k)FULL_effectDamage(f,k,f.max,r,ctx,true,{explosion:true});return false}
+    if(n==='Full Moon Transformation'&&!f._moonRevive){f._moonRevive=true;const q=FULL_fab(f)?.20:.15;buff(f,q);f.hp=f.max;if(FULL_fab(f))f._extraTurnAfterRevive=true;return false}
+    if(n==='Age of Beasts'&&!f._mammothRevive){f._mammothRevive=true;f.hp=Math.max(1,Math.floor(f.max*(FULL_fab(f)?.50:.40)));return false}
+    if(n==='Curse of Decay'&&!f._decayUsed){f._decayUsed=true;f.hp=1;FULL_addBlock(f,1);if(k)k._decayCurse={source:f};return false}
+  }
+  f.dead=true;f.hp=0;if(k)k.kills=(k.kills||0)+1;FULL_processCurseDeath(f);
+
+  if(deathEffectsEnabled){const n=f.ability.name;
+    if(n==='Void Devastation'&&k){let remaining=f.stored||0;for(const e of FULL_alive(foes)){if(remaining<=0)break;const hp=e.hp,res=FULL_effectDamage(f,e,remaining,r,ctx,true,{explosion:true});remaining=Math.max(0,remaining-hp);if(!FULL_fab(f))break}}
+    else if(n==='Raise Dead'){const dead=team.filter(x=>x.dead&&x!==f);if(dead.length){const q=pick(r,dead);q.dead=false;q.hp=Math.max(1,Math.floor(q.max*(FULL_fab(f)?.25:.20)));q._entered=false;if(FULL_fab(f))FULL_addBlock(q,1)}}
+    else if(n==='Goblin Rally'){const baseHp=f.max,baseAtk=f.atk;for(let i=0;i<2;i++){const g=FULL_spawn('Goblin',flags(),f.side,team,FULL_fab(f)?baseHp*.25:Math.max(1,(BY.get('Goblin')?stats(BY.get('Goblin'),flags()).hp:10)),FULL_fab(f)?baseAtk*.25:Math.max(1,(BY.get('Goblin')?stats(BY.get('Goblin'),flags()).atk:5)));if(FULL_fab(f))FULL_init(g)}}
+    else if(n==='Luck Incarnate'){const nx=FULL_next(f,team);if(nx){const q=FULL_fab(f)?(.77+r()*1):(.07+r()*.70);nx.max+=Math.floor(f.max*q);nx.hp+=Math.floor(f.max*q);nx.atk+=Math.floor(f.atk*q)}}
+    else if(n==='Dragon Mother')for(const x of FULL_alive(team).filter(FULL_isDragon)){x.atk=Math.floor(x.atk*(1+(FULL_fab(f)?.60:.40)));if(FULL_fab(f))buffHp(x,.25)}
+    else if(n==='Crown of Embers')FULL_passCrown(f,team);
+    else if(n==='Final Stand')for(const x of FULL_alive(foes))FULL_timedAtk(x,1-(FULL_fab(f)?.30:.20),FULL_fab(f)?6:4);
+    else if(n==='Sacred Rejuvenation'){const proc=FULL_fab(f)||r()<.50,nx=FULL_next(f,team);if(proc&&nx){const h=Math.floor(f.max*.50),a=Math.floor(f.atk*.50);nx.max+=h;nx.hp+=h;nx.atk+=a;if(FULL_fab(f))buff(nx,.10)}}
+  }
+
+  if(f._deathWhisper?.source){const s=f._deathWhisper.source;if(s&&!s.dead&&s.hp>0)FULL_spawn('Ghostly Minion',flags(),s.side,FULL_team(s,ctx),Math.floor(f.max*f._deathWhisper.pct),Math.floor(f.atk*f._deathWhisper.pct))}
+  if(k&&FULL_enabled(k,ctx)){const n=k.ability.name;
+    if(n==='Double Strike'&&FULL_fab(k))heal(k,Math.floor(k.max*.15));
+    if(n==='Critical Mass'&&FULL_fab(k)&&k._criticalLost>0){const restore=Math.floor(k._criticalLost*.25);k.atk+=restore;k._criticalLost=Math.max(0,k._criticalLost-restore)}
+    if(n==='Starfall Barrage')k.atk=Math.floor(k.atk*1.30);
+    if(n==='Cataclysmic Devour'){k.max+=Math.floor(f.max*.30);k.hp+=Math.floor(f.max*.30);k.atk+=Math.floor(f.atk*.30)}
+    if(n==='Permafrost'&&f.frozen)buff(k,.20);
+    if(n==='Unstoppable Force')k.atk=Math.floor(k.atk*(FULL_fab(k)?2:1.80));
+    if(n==='Colossal Momentum')k._chainAttack=(k._chainAttack||[]).concat(FULL_fab(k)?.85:.50);
+    if(n==='Imperial Advance'){FULL_addBlock(k,1);if(FULL_fab(k))for(const x of FULL_alive(FULL_team(k,ctx)))buff(x,.05);k._chainAttack=(k._chainAttack||[]).concat(FULL_fab(k)?.80:.65)}
+    if(n==='Greed'&&FULL_fab(k)){const q=.05+.05*(k._potsDevoured||0);heal(k,Math.floor(k.max*q))}
+    if(n==='Hollow Conscription'){const q=FULL_fab(k)?.55:.40,thr=FULL_spawn(f.card?.name||'Corrupted Thrall',{corrupted:true},k.side,FULL_team(k,ctx),f.max*q,f.atk*q);thr.ability={name:'',desc:''};thr._thrallTurns=FULL_fab(k)?2:1;heal(k,Math.floor(k.max*(FULL_fab(k)?.15:.10)));if(FULL_fab(k))k.atk=Math.floor(k.atk*1.10)}
+  }
+  if(k&&k.ability?.name==='Festering Edge'&&FULL_fab(k)&&k._festeringCarry){const nx=FULL_active(foes);if(nx){const c=Math.min(nx.max-1,k._festeringCarry);nx.max=Math.max(1,nx.max-c);nx.hp=Math.min(nx.hp,nx.max)}k._festeringCarry=0}
+  for(const crawler of team.filter(x=>!x.dead&&x.ability?.name==='Borrowed Mask')){const prev=FULL_prevAny(crawler,team);if(prev===f&&f.ability?.name){crawler.ability={...f.ability};crawler._borrowed=true}}
+  FULL_triggerRevenants(f,team,r);FULL_reindex(team);return true;
+}
+
+function FULL_endTurn(f,own,foes,r,ctx){
+  if(!f||f.dead)return;
+  if(FULL_enabled(f,ctx)&&f.ability?.name==='Tainted Vitality'){const pct=FULL_fab(f)?.06:.08,loss=Math.min(f.hp-1,Math.floor(f.max*pct));if(loss>0){f.hp-=loss;f._taintedBonus=(f._taintedBonus||0)+Math.floor(loss*(FULL_fab(f)?1.5:1))}}
+  if(f._rottenTurns){f._rottenTurns--;if(f._rottenTurns<=0)f.hp=0}
+  if(FULL_enabled(f,ctx)&&f.ability?.name==='Cocooned Protection'&&f._cocoonTurns>0){f._cocoonTurns--;if(f._cocoonTurns===0&&!f._cocoonBurstDone){f._cocoonBurstDone=true;const e=FULL_active(foes);if(e&&f._cocoonAbsorbed)FULL_effectDamage(f,e,Math.floor(f._cocoonAbsorbed*.50),r,ctx,true,{cocoon:true});if(FULL_fab(f)){f.hp=f.max;const pool=Object.keys(FABLED).filter(x=>x&&x!==f.ability.name);if(pool.length){const n=pick(r,pool);f.ability={name:n,desc:FABLED[n]};f.flags.fabled=true}}}}
+}
