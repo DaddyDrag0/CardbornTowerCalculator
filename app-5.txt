@@ -1,9 +1,14 @@
 // Runtime fixes loaded inside the main Cardborn IIFE, after app-3 and before app-4.
 const PATCH_MAX_FLOOR=50000;
 
+function PATCH_cardImageIds(c){
+  const fromCard=[aid(c?.croppedImageId),aid(c?.imageId)].filter(Boolean);
+  if(fromCard.length)return fromCard;
+  return(window.CARDBORN_IMAGE_IDS?.[c?.name]||[]).filter(Boolean);
+}
 function PATCH_imageSources(c){
   if(!c)return[];
-  const ids=[aid(c?.croppedImageId),aid(c?.imageId)].filter(Boolean),map=window.CARDBORN_THUMBNAILS||{},out=[];
+  const ids=PATCH_cardImageIds(c),map=window.CARDBORN_THUMBNAILS||{},out=[];
   for(const id of ids)if(map[id])out.push(map[id]);
   for(const id of ids)out.push(`https://www.roblox.com/asset-thumbnail/image?assetId=${id}&width=420&height=420&format=png`);
   return[...new Set(out)];
