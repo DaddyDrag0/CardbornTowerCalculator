@@ -1,0 +1,104 @@
+  'Endless Winter':'On entry, increase this card’s stats by 50% if any enemy card is Frozen. Once per battle, if this card would be defeated by an attack, it instead heals for the damage it would have taken and Freezes the attacker for 2 turns.',
+  'Necrotic Bloom':"On entry, increase all allies' max health by 40% and heal them for 30% of their max health. Every other turn, gain a shield that blocks one attack and heal all allies for 12% of their max health.",
+  'Hollow Conscription':'When this card defeats an enemy, raise that enemy as a corrupted thrall for 2 turns at 55% of their original stats. This card heals 15% of max health and gains 10% damage for each thrall raised.',
+  'Tainted Vitality':'Whenever this card would be healed, triple the amount and convert it into bonus damage instead. At the end of each turn, lose 6% max health and add 150% of that amount as bonus damage on the next attack.',
+  'Festering Edge':"On each attack, reduce the target's max health by 75% of this card's damage and increase this card's damage by 35%. If the target is defeated, carry half of the max-health reduction to the next enemy.",
+  'Curse of Decay':'When this card would be defeated, instead survive with 1 health and curse the attacking enemy. If the cursed enemy is defeated before attacking again, heal this card for 35% max health, gain a shield, and permanently gain 20% damage.',
+  'Unshaken Form':'This card cannot be stunned or frozen, enemy double attacks only hit once, and whenever this card survives an attack it permanently gains 15% damage and heals 5% of max hp.',
+});
+
+const FULL_HANDLED=new Set([
+'Field Guardian','Peasant’s Bravery','Pillage','Focused Aim','Ambush','Purifying Light','Nature’s Guardian','Flame Wall','Dark Pact','Backstab','Throwing Spear','Resilience','Swarm Strike','Holy Strike','Raise Dead','Goblin Rally','Double Strike','Lich’s Curse','Scurrying Escape','Savage Fury','Tip the Guard','Inspiring Leadership','Cocooned Protection','Fatal Sting',"King's Rule",'Fine Print','Treasure','Arachnid Dominion','Dragon’s Roar','Blinding Dive','Reflective Coil','Tunnel Strike','Paid Security','Full Moon Transformation','Refraction','Rejection of Love','Gemstone Fortress','Unshaken Form','Taxed','Vampiric Drain','Crystal Slam','Seasoned Veteran','Arcane Mastery','Luck Incarnate','Chaotic Contraption','Elemental Fury','Dark Ritual','Eye of the Storm','The Coming of the Year','Weak Growth','Crystalline Prison','Gearjam','Stricken Terror','Amethyst Armor','Radiant Burst','Sacred Rejuvenation','Greed','Hold the Line','Void Beam','Renewal of a New Cycle','Soulpierce Arrow','Age of Beasts','Solar Ward','Frost Breath','Demonic Fury','Critical Mass','Immortal Scales','Strut & Strike','Death’s Whisper','Haunting Presence','Raging Tempest',"Earth's Blessing",'Winter’s Grasp','Moment of Impact','Crown of Embers','Colossal Momentum','Double or Nothing','Cursed Forge','Slip Between Shadows','Mind Fracture','Dragon Mother','Triple Petal Slash','Crushing Depths',"Heaven's Threshold",'Inverse Law','Astral Blessing','Undying Grudge','Unstoppable Force','Perfect Strike','Till Death Do Us Part','Apex Dragon','Puppet Strings','Melodic Revival','Behemoth’s Wrath','Near Perfection','Endless Reign','Flow State','Unstable Power','Void Devastation','Event Horizon','Imperial Advance','Final Stand','Grace of the Divine','Soul Reservoir','Endless Hunger','Furnace Heart','Celestial Smite','Ascendant War Doctrine','Treacherous Feast','King’s Command','Rotten Pact','Nullify','Titan’s Kindness','Pull of the Deep','Fate Reversal','Starfall Barrage','Royal Decree: Silence','Between Worlds','Shadow Rebirth','Arcane Cataclysm','Cataclysmic Devour','Kings Vision','Ruler Of Cardborn','Frozen Guard','Turn Theft','Borrowed Mask','Permafrost','Withering Feast','Crushing Cold','Assassin’s Blizzard','Arctic Giant’s Protection','Endless Winter','Necrotic Bloom','Hollow Conscription','Tainted Vitality','Festering Edge','Curse of Decay'
+]);
+const FULL_ALL_ABILITIES=[...new Set(CARDS.map(c=>c.ability?.name).filter(Boolean))];
+const FULL_MISSING=FULL_ALL_ABILITIES.filter(n=>!FULL_HANDLED.has(n));
+const FULL_ABILITY_AUDIT={cards:CARDS.length,uniqueAbilities:FULL_ALL_ABILITIES.length,handled:FULL_HANDLED.size,missing:FULL_MISSING};
+if(FULL_MISSING.length)console.error('Cardborn ability handler missing:',FULL_MISSING);
+
+let FULL_CONTEXT=null;
+const FULL_fab=f=>!!(f?.flags?.fabled&&FABLED[f.ability?.name]&&FABLED[f.ability?.name]!=='None');
+function FULL_team(f,ctx=FULL_CONTEXT){return ctx?.team?.(f)||[]}
+function FULL_enemyTeam(f,ctx=FULL_CONTEXT){if(!ctx)return[];const own=ctx.team(f)||[];return ctx.all?.find?.(t=>t!==own)||[]}
+function FULL_active(team){return (team||[]).find(x=>x&&!x.dead&&x.hp>0)||null}
+function FULL_alive(team){return (team||[]).filter(x=>x&&!x.dead&&x.hp>0)}
+function FULL_reindex(team){(team||[]).forEach((x,i)=>{if(x)x.index=i})}
+function FULL_prev(f,team){const i=(team||[]).indexOf(f);for(let j=i-1;j>=0;j--){const x=team[j];if(x&&!x.dead&&x.hp>0)return x}return null}
+function FULL_next(f,team){const i=(team||[]).indexOf(f);for(let j=i+1;j<(team||[]).length;j++){const x=team[j];if(x&&!x.dead&&x.hp>0)return x}return null}
+function FULL_lastAlive(team){const a=FULL_alive(team);return a[a.length-1]||null}
+function FULL_lowest(team,exclude){return FULL_alive(team).filter(x=>x!==exclude).sort((a,b)=>a.hp-b.hp)[0]||null}
+function FULL_isDragon(f){return /dragon/i.test(f?.card?.name||'')}
+function FULL_isWarriorPath(f){return f?.card?.weatherLock==='WarriorsPath'}
+function FULL_init(f){if(!f)return f;if(f._fullInit)return f;f._fullInit=true;f._originalMax=f.max;f._originalAtk=f.atk;f._firstAttack=true;f._attackCount=0;f._damageTakenCount=0;f._timedAtk=[];f._baseDr=f.dr||0;f._bonusDodge=0;f._flowStacks=0;f._flowOn=false;f._extraNext=0;f._gunshinFlat=0;f._bonusNextFlat=0;f._ampTaken=0;f._confused=null;f._solarBurnPct=0;f._cocoonAbsorbed=0;f._cocoonStartTurn=null;f._fabledAbilityCopied=false;return f}
+function FULL_initTeams(...teams){for(const team of teams)for(const f of team||[])FULL_init(f)}
+function FULL_percent(f,normal,fabled){return FULL_fab(f)?fabled:normal}
+function FULL_stun(t,n=1){if(!t)return;if(t.ability?.name==='Unshaken Form'||(t.ability?.name==='Flow State'&&t._flowOn&&FULL_fab(t)))return;t.skip=Math.max(t.skip||0,n)}
+function FULL_freeze(t,n=1){if(!t)return;if(t.ability?.name==='Unshaken Form'||(t.ability?.name==='Flow State'&&t._flowOn&&FULL_fab(t)))return;t.frozen=Math.max(t.frozen||0,n)}
+function FULL_addBlock(f,n=1){if(!f||f.ability?.name==='King’s Command')return;f.shields=(f.shields||0)+n}
+function FULL_addHpShield(f,hp,solarBurn=0){if(!f||f.ability?.name==='King’s Command')return;f.shieldHp=(f.shieldHp||0)+Math.max(0,Math.floor(hp));if(solarBurn)f._solarBurnPct=Math.max(f._solarBurnPct||0,solarBurn)}
+function FULL_timedAtk(f,factor,turns){if(!f||factor>=1)return;FULL_init(f);const old=f.atk,next=Math.max(1,Math.floor(old*factor));f.atk=next;f._timedAtk.push({restore:old-next,expire:(f.turn||0)+turns})}
+function FULL_expireTimed(f){FULL_init(f);const keep=[];for(const x of f._timedAtk){if((f.turn||0)>x.expire)f.atk+=x.restore;else keep.push(x)}f._timedAtk=keep;if(f._deathWhisper&&f._deathWhisperExpires!=null&&(f.turn||0)>f._deathWhisperExpires){f._ampTaken=Math.max(0,(f._ampTaken||0)-f._deathWhisper.amp);f._deathWhisper=null;f._deathWhisperExpires=null}if(f._prisonAmp!=null&&f._prisonAmpExpire!=null&&(f.turn||0)>f._prisonAmpExpire){f._ampTaken=Math.max(0,(f._ampTaken||0)-f._prisonAmp);f._prisonAmp=null;f._prisonAmpExpire=null}}
+function FULL_enabled(f,ctx=FULL_CONTEXT,{dodge=false}={}){if(!f||f.dead||f.hp<=0)return false;if(f.side==='p'?!state.pAbilities:!state.eAbilities)return false;if(f.silenced)return false;if(!ctx)return true;const other=ctx.opponentTeam?.(f)||[];const nullifier=FULL_active(other);if(nullifier&&nullifier.ability?.name==='Nullify'&&!nullifier.dead&&nullifier.hp>0){if(dodge&&['Scurrying Escape','Eye of the Storm','Mind Fracture','Astral Blessing','Royal Decree: Silence'].includes(f.ability?.name))return true;return false}return true}
+function FULL_deathEnabled(f,ctx=FULL_CONTEXT){if(!f||f.dead)return false;if(f.side==='p'?!state.pAbilities:!state.eAbilities)return false;if(f.silenced)return false;if(!ctx)return true;const other=ctx.opponentTeam?.(f)||[];const nullifier=FULL_active(other);return !(nullifier&&nullifier.ability?.name==='Nullify'&&!nullifier.dead&&nullifier.hp>0)}
+
+heal=function(f,n){if(!f||f.dead||n<=0)return;FULL_init(f);n=Math.max(0,Math.floor(n));if(FULL_enabled(f,FULL_CONTEXT)&&f.ability?.name==='Tainted Vitality'){
+  const mult=FULL_fab(f)?3:2;f.atk+=Math.floor(n*mult);return;
+}
+const before=f.hp;f.hp=Math.min(f.max,f.hp+n);const excess=Math.max(0,before+n-f.max);if(excess&&FULL_enabled(f,FULL_CONTEXT)&&f.ability?.name==='Vampiric Drain'&&FULL_fab(f))FULL_addHpShield(f,Math.min(excess,Math.floor(f.max*.50)));
+};
+
+function FULL_effectDamage(a,t,d,r,ctx,ignore=false,meta={}){if(!t||t.dead||t.hp<=0)return{dealt:0,killed:false};const dealt=damage(a,t,d,r,ctx,ignore,{direct:false,...meta});let killed=false;if(t.hp<=0&&!t.dead)killed=die(t,a,FULL_team(t,ctx),ctx?.opponentTeam?.(t)||FULL_team(a,ctx),r,ctx);return{dealt,killed}}
+function FULL_resolveDeaths(teams,r,ctx,killer){let changed=true,guard=0;while(changed&&guard++<20){changed=false;for(const team of teams){for(const f of team||[]){if(f&&!f.dead&&f.hp<=0){die(f,killer,team,ctx.opponentTeam?.(f)||[],r,ctx);changed=true}}}}}
+function FULL_spawn(cardName,flagsIn,side,team,hp,atk){const card=BY.get(cardName)||{name:cardName,rarityValue:1,weatherLock:null,ability:{name:'',desc:''},isSecret:false};const fl={...flags(),...(flagsIn||{})};const z=fighter(card,fl,side,team.length,{hp:Math.max(1,Math.floor(hp)),atk:Math.max(1,Math.floor(atk))});FULL_init(z);team.push(z);FULL_reindex(team);return z}
+
+teamStart=function(own,foes,cid){FULL_CONTEXT={team:f=>f.side===own[0]?.side?own:foes,opponentTeam:f=>f.side===own[0]?.side?foes:own,all:[own,foes]};FULL_initTeams(own,foes);corrStart(own,cid);
+  // Fabled Flare King creates a same-border Sun Sprite at the very front.
+  for(const flare of [...own])if(FULL_enabled(flare,FULL_CONTEXT)&&flare.ability?.name==='Crown of Embers'&&FULL_fab(flare)){const sun=BY.get('Sun Sprite');if(sun){const s=fighter(sun,{...flare.flags},flare.side,0);FULL_init(s);own.unshift(s);FULL_reindex(own)}}
+  // Fabled Greed consumes Pots before regular battle-start buffs.
+  for(const lep of own)if(FULL_enabled(lep,FULL_CONTEXT)&&lep.ability?.name==='Greed'&&FULL_fab(lep)){const pots=own.filter(x=>x!==lep&&!x.dead&&x.card?.name==='Pot of Gold');lep._potsDevoured=pots.length;for(const pot of pots){pot.dead=true;pot.hp=0}for(let i=0;i<pots.length;i++)buff(lep,.35)}
+  for(const f of own){if(!FULL_enabled(f,FULL_CONTEXT))continue;const n=f.ability.name;
+    if(n==='Purifying Light')for(const x of FULL_alive(own))buffHp(x,FULL_percent(f,.05,.12));
+    else if(n==='Swarm Strike'){const c=own.filter(x=>/goblin/i.test(x.card?.name||'')).length;if(FULL_fab(f)){for(let i=0;i<c;i++)buff(f,.20)}else f.atk=Math.floor(f.atk*(1+.20*c));}
+    else if(n==='Tip the Guard'){f.dr=Math.max(f.dr,.30);if(!FULL_fab(f))f.atk=Math.max(1,Math.floor(f.atk*.70));}
+    else if(n==='Inspiring Leadership'){const knights=own.filter(x=>/(knight|paladin)/i.test(x.card?.name||'')).length;for(let i=0;i<knights;i++)buff(f,.10);if(FULL_fab(f)){for(const x of FULL_alive(own).filter(x=>/(knight|paladin)/i.test(x.card?.name||''))){const others=Math.max(0,knights-1);for(let j=0;j<others;j++)buff(x,.05)}}}
+    else if(n==="King's Rule"){if(FULL_fab(f)){for(const x of FULL_alive(own)){if(x===f)continue;const hp=Math.floor(f.max*.20),atk=Math.floor(f.atk*.20);x.max+=hp;x.hp+=hp;x.atk+=atk;x._kingFirstBonus=(x._kingFirstBonus||0)+Math.floor(f.atk*.10)}}else for(const x of FULL_alive(own))if(x!==f)x.atk+=Math.floor(f.atk*.15);}
+    else if(n==='Arachnid Dominion'){for(const x of FULL_alive(own).filter(x=>/spider/i.test(x.card?.name||''))){x.atk=Math.floor(x.atk*(FULL_fab(f)?1.40:1.20));x.dr=Math.max(x.dr,FULL_fab(f)?.30:.25)}}
+    else if(n==='Greed'&&!FULL_fab(f)){const c=own.filter(x=>x.card?.name==='Pot of Gold'&&!x.dead).length;for(let i=0;i<c;i++)buff(f,.15)}
+    else if(n==='Paid Security'){const c=own.filter(x=>x.card?.weatherLock==='TravelingCaravan'&&x!==f&&!/Market Guard/i.test(x.card?.name||'')).length;for(let i=0;i<c;i++)buff(f,FULL_fab(f)?.40:.35);if(FULL_fab(f))for(const x of FULL_alive(own).filter(x=>x!==f&&x.card?.weatherLock==='TravelingCaravan'))buff(x,.15)}
+    else if(n==='Solar Ward'){for(const x of FULL_alive(own))FULL_addHpShield(x,Math.floor(x.max*FULL_percent(f,.25,.50)),.10)}
+    else if(n==='Cursed Forge')for(const x of FULL_alive(own))buff(x,FULL_percent(f,.07,.12));
+    else if(n==='Crushing Cold'){const rr=rarity(f.card,f.flags),count=FULL_fab(f)?3:2;foes.filter(x=>rarity(x.card,x.flags)<rr).sort((a,b)=>rarity(a.card,a.flags)-rarity(b.card,b.flags)).slice(0,count).forEach(x=>FULL_freeze(x,1));}
+    else if(n==='Gemstone Fortress'){const first=FULL_active(own);if(first)FULL_addBlock(first,1);if(FULL_fab(f)&&f!==first)FULL_addBlock(f,1)}
+  }
+};
+
+function FULL_applyOpponentEntryAuras(entering,foes,r,ctx){for(const u of FULL_alive(foes)){if(!FULL_enabled(u,ctx))continue;if(u.ability?.name==='Event Horizon'){u.dr=Math.max(u.dr,FULL_percent(u,.10,.20));entering._umbralMark={source:u,damageDown:FULL_percent(u,.20,.35),amp:FULL_percent(u,.25,.50),hits:0};entering.atk=Math.max(1,Math.floor(entering.atk*(1-entering._umbralMark.damageDown)))}}
+}
+
+enter=function(f,t,own,foes,r,ctx){FULL_CONTEXT=ctx;FULL_initTeams(own,foes);if(!f)return;FULL_init(f);corrEntry(f,t,r,ctx);FULL_applyOpponentEntryAuras(f,foes,r,ctx);if(!FULL_enabled(f,ctx))return;const n=f.ability.name;
+  if(n==='Field Guardian')buffHp(f,FULL_percent(f,.15,.40));
+  else if(n==='Pillage'&&t)f.atk+=Math.floor(t.atk*FULL_percent(f,.07,.13));
+  else if(n==='Ambush'&&t){FULL_effectDamage(f,t,Math.floor(f.atk*FULL_percent(f,.40,.60)),r,ctx);if(r()<FULL_percent(f,.25,.50))f._ambushDouble=true}
+  else if(n==='Fatal Sting'&&t){const low=t.hp/t.max<.5,base=FULL_fab(f)?1:.70;FULL_effectDamage(f,t,Math.floor(f.atk*(base+(low?.70:0))),r,ctx);if(FULL_fab(f)){const jump=FULL_lowest(foes,t);if(jump)FULL_effectDamage(f,jump,Math.floor(f.atk*.60),r,ctx)}}
+  else if(n==='Dragon’s Roar'&&t){FULL_stun(t,1);t.atk=Math.max(1,Math.floor(t.atk*(1-FULL_percent(f,.15,.20))));if(FULL_fab(f))buff(f,t.atk<f.atk?.20:.10)}
+  else if(n==='Rejection of Love'){const original=f.max;const factor=FULL_fab(f)?2.5:2;f.max=Math.floor(f.max*factor);f.hp=f.max;f._heartOriginal=original}
+  else if(n==='Gearjam'&&t){const oldHp=t.max,oldAtk=t.atk;t.max=Math.max(1,oldAtk);t.hp=Math.min(t.max,Math.max(1,oldAtk));t.atk=Math.max(1,oldHp);if(FULL_fab(f)){t.max=Math.max(1,Math.floor(t.max*.75));t.hp=Math.min(t.hp,t.max);t.atk=Math.max(1,Math.floor(t.atk*.75))}}
+  else if(n==='Renewal of a New Cycle')buffHp(f,FULL_fab(f)?1.85:1);
+  else if(n==='Age of Beasts')buffHp(f,FULL_fab(f)?1.20:.40);
+  else if(n==='Taxed'){const q=FULL_percent(f,.12,.15),living=FULL_alive(own);let stolen=0;for(const e of FULL_alive(foes)){const take=Math.max(0,Math.floor(e.atk*q));e.atk=Math.max(1,e.atk-take);stolen+=take}if(living.length&&stolen){const each=Math.floor(stolen/living.length);let rem=stolen-each*living.length;for(const ally of living){ally.atk+=each+(rem>0?1:0);if(rem>0)rem--}}}
+  else if(n==='Ascendant War Doctrine'){for(const ally of FULL_alive(own)){ally._gunshinExtra=(ally._gunshinExtra||0)+1;if(FULL_fab(f))ally._gunshinFlat=(ally._gunshinFlat||0)+Math.floor(f.atk*.60);if(FULL_isWarriorPath(ally))buff(ally,FULL_percent(f,.30,.50))}}
+  else if(n==='Crushing Depths'&&t){FULL_timedAtk(t,1-FULL_percent(f,.50,.65),FULL_fab(f)?3:2);if(FULL_fab(f))for(const x of FULL_alive(foes).filter(x=>x!==t))x.atk=Math.max(1,Math.floor(x.atk*.80))}
+  else if(n==='Crown of Embers'){f._crownPct=FULL_percent(f,.30,.45);buff(f,f._crownPct)}
+  else if(n==="Heaven's Threshold")for(const x of FULL_alive(own))buffHp(x,FULL_percent(f,.10,.18));
+  else if(n==="Earth's Blessing")for(const x of FULL_alive(own)){x.dr=Math.max(x.dr,FULL_percent(f,.15,.25));if(FULL_fab(f))x._earthFirstGrowth=true}
+  else if(n==='Inverse Law'){const oldAtk=f.atk,oldHp=f.max;f.max=Math.max(1,oldAtk);f.hp=f.max;f.atk=Math.max(1,oldHp);}
+  else if(n==='Apex Dragon'){const cut=FULL_percent(f,.20,.30),aoe=FULL_percent(f,.35,.60);for(const x of FULL_alive(foes)){x.atk=Math.max(1,Math.floor(x.atk*(1-cut)));FULL_effectDamage(f,x,Math.floor(f.atk*aoe),r,ctx,true,{aoe:true});if(FULL_fab(f))x._vorrathAmpSource=f}}
+  else if(n==='Behemoth’s Wrath')buff(f,FULL_percent(f,.50,.80));
+  else if(n==='Imperial Advance'){for(const x of FULL_alive(own))buff(x,FULL_percent(f,.15,.20));}
+  else if(n==='Starfall Barrage'){let kills=0;for(const x of [...FULL_alive(foes)]){const res=FULL_effectDamage(f,x,Math.floor(f.atk*.15),r,ctx,true,{aoe:true});if(res.killed)kills++}for(let i=0;i<kills;i++)f.atk=Math.floor(f.atk*1.30)}
+  else if(n==='Ruler Of Cardborn'&&t){if(rarity(t.card,t.flags)<rarity(f.card,f.flags)){f.atk=Math.floor(f.atk*1.30);f._creatorExtra=1}else{buffHp(f,.50);FULL_addBlock(f,1)}}
+  else if(n==='Permafrost'&&t)FULL_freeze(t,1);
+  else if(n==='Endless Winter'&&FULL_alive(foes).some(x=>x.frozen))buff(f,FULL_fab(f)?.50:.30);
+  else if(n==='Necrotic Bloom'){const bh=FULL_percent(f,.15,.40),healPct=FULL_percent(f,.20,.30);for(const x of FULL_alive(own)){const old=x.max;buffHp(x,bh);heal(x,Math.floor(x.max*healPct));if(x.hp>x.max)x.hp=x.max}}
+  else if(n==='Death’s Whisper'&&t){const hit=FULL_percent(f,.35,.45),amp=FULL_percent(f,.25,.35),pct=FULL_percent(f,.20,.30);FULL_effectDamage(f,t,Math.floor(f.atk*hit),r,ctx);t._deathWhisper={source:f,amp,pct};t._deathWhisperExpires=(t.turn||0)+2;t._ampTaken=Math.max(t._ampTaken||0,amp)}
+  else if(n==='Melodic Revival'){f.max+=f.atk;f.hp+=f.atk;if(FULL_fab(f))f.dr=Math.max(f.dr,.30)}
+  else if(n==='Nullify'&&FULL_fab(f))f.dr=Math.max(f.dr,.15);

@@ -1,0 +1,3 @@
+// Preserve the authoritative FabledAbilityText extraction before the full combat engine loads.
+// A Fabled border always keeps its stat multiplier, but only entries in this table have an upgraded ability.
+const EXTRACTED_FABLED=Object.freeze({...FABLED});

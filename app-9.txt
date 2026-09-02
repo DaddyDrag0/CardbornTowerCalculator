@@ -1,0 +1,30 @@
+// Cardborn battle rule: every physical card may activate On Entry once and On Death once per battle.
+// Reviving, re-entering, or changing/copying an ability does not reset either trigger.
+
+const RULE_baseEnter=enter;
+enter=function(f,t,own,foes,r,ctx){
+  if(!f)return RULE_baseEnter(f,t,own,foes,r,ctx);
+  FULL_init(f);
+  if(f._onEntryUsed)return;
+  f._onEntryUsed=true;
+  return RULE_baseEnter(f,t,own,foes,r,ctx);
+};
+
+const RULE_baseDie=die;
+die=function(f,k,team,foes,r,ctx){
+  if(!f||f.dead||f.hp>0)return RULE_baseDie(f,k,team,foes,r,ctx);
+  FULL_init(f);
+
+  // The first lethal/death trigger is allowed to resolve normally. Any later death of the
+  // same physical card still kills the card, but its death-triggered ability is suppressed.
+  if(f._onDeathUsed){
+    const savedAbility=f.ability;
+    f.ability={...(savedAbility||{}),name:`${savedAbility?.name||'Ability'} (death spent)`};
+    const result=RULE_baseDie(f,k,team,foes,r,ctx);
+    f.ability=savedAbility;
+    return result;
+  }
+
+  f._onDeathUsed=true;
+  return RULE_baseDie(f,k,team,foes,r,ctx);
+};

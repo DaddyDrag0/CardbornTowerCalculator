@@ -1,0 +1,97 @@
+const FULL_turnStartCore=turnStart;
+turnStart=function(f,t,own,foes,r,ctx){
+  const out=FULL_turnStartCore(f,t,own,foes,r,ctx);FULL_CONTEXT=ctx;
+  if(f&&FULL_enabled(f,ctx)&&f.ability?.name==='Renewal of a New Cycle'&&f.turn>=4&&!ctx._janusUsed?.[f.side]){
+    ctx._janusUsed=ctx._janusUsed||{p:false,e:false};ctx._janusUsed[f.side]=true;const pct=FULL_fab(f)?.65:.50;
+    for(const x of own){if(x.dead){x.dead=false;x.hp=Math.max(1,Math.floor(x.max*pct));x._entered=false}}
+  }
+  if(f&&FULL_enabled(f,ctx)&&f.ability?.name==='Melodic Revival'&&f.turn%2===0){
+    const dead=own.filter(x=>x.dead);if(dead.length){const x=dead[0];x.dead=false;x.hp=Math.max(1,Math.floor(x.max*(FULL_fab(f)?.60:.50)));if(FULL_fab(f))x.atk=Math.floor(x.atk*1.20);x._entered=false}
+    else{const e=FULL_active(foes);if(e)FULL_effectDamage(f,e,Math.floor(f.max*(FULL_fab(f)?1.50:1)),r,ctx,true,{explosion:true})}
+  }
+  return out;
+};
+
+function FULL_logAbility(events,turn,f,phase,before,pt,et,extra=[]){if(!events||!f||typeof pushAbility!=='function')return;try{pushAbility(events,turn,f,phase,before,pt,et,extra)}catch(_){}}
+function FULL_logEvent(events,event){if(events)events.push(event)}
+function FULL_snapshot(pt,et){try{return typeof captureBattle==='function'?captureBattle(pt,et):null}catch(_){return null}}
+function FULL_teamName(f){return f?.side==='p'?'Allies':'Enemies'}
+function FULL_ensureEntry(team,foes,r,ctx,events,turn,pt,et){
+  const f=FULL_active(team);if(!f||f._entered)return f;f._entered=true;const target=FULL_active(foes),before=FULL_snapshot(pt,et);enter(f,target,team,foes,r,ctx);FULL_logAbility(events,turn,f,'On entry',before,pt,et);return FULL_active(team);
+}
+function FULL_resolveTeamDeaths(pt,et,k,r,ctx,events,turn){
+  let changed=true,guard=0;while(changed&&guard++<30){changed=false;for(const team of [pt,et])for(const f of [...team])if(f&&!f.dead&&f.hp<=0){const beforeHp=f.hp,oldLen=team.length,died=die(f,k,team,ctx.opponentTeam(f),r,ctx);changed=true;if(died)FULL_logEvent(events,{turn,type:'death',team:FULL_teamName(f),card:f.card?.name||'Unknown',detail:`Defeated${k?.card?.name?' by '+k.card.name:''}`});else if(f.hp>0)FULL_logEvent(events,{turn,type:'revive',team:FULL_teamName(f),card:f.card?.name||'Unknown',detail:`${f.ability?.name||'Revive'} · revived to ${Math.floor(f.hp)} HP`});if(team.length>oldLen)for(const z of team.slice(oldLen))FULL_logEvent(events,{turn,type:'spawn',team:FULL_teamName(z),card:z.card?.name||'Summon',detail:`Spawned · ${Math.floor(z.hp)} HP · ${Math.floor(z.atk)} ATK`})}}
+}
+function FULL_beforeHitAuras(actor,target,own,foes,r,ctx,events,turn){
+  if(!actor||!target)return;
+  if(actor._firstAttack&&!actor._spearTriggered){actor._spearTriggered=true;for(const spear of FULL_alive(own).filter(x=>FULL_enabled(x,ctx)&&x.ability?.name==='Throwing Spear')){const d=Math.floor(spear.atk*(FULL_fab(spear)?.60:.20)),before=FULL_snapshot(ctx.all[0],ctx.all[1]);FULL_effectDamage(spear,target,d,r,ctx,true,{spear:true});FULL_logAbility(events,turn,spear,'Ally first turn',before,ctx.all[0],ctx.all[1],[`dealt ${d} bonus damage`])}}
+  if(FULL_enabled(target,ctx)&&target.ability?.name==='Raging Tempest'&&r()<(FULL_fab(target)?.65:.50)){const d=Math.floor(target.atk*(FULL_fab(target)?.45:.35)),before=FULL_snapshot(ctx.all[0],ctx.all[1]);FULL_effectDamage(target,actor,d,r,ctx,true,{lightning:true});FULL_logAbility(events,turn,target,'Before enemy attack',before,ctx.all[0],ctx.all[1],[`lightning ${d}`])}
+}
+function FULL_prepareHit(actor,target,foes,r,ctx,hitNo,totalHits,baseMult){
+  let actual=target,mult=baseMult,ignore=actor.ability?.name==='Perfect Strike',flat=0,meta={direct:true,targetWasFrozen:!!target?.frozen};
+  const n=actor.ability?.name;
+  if(actor._eyeNext){mult*=actor._eyeNext;actor._eyeNext=0}
+  if(actor._taintedBonus){flat+=actor._taintedBonus;actor._taintedBonus=0}
+  if(actor._kingFirstBonus&&actor._firstAttack&&hitNo===0)flat+=actor._kingFirstBonus;
+  if(actor._consumeGunshinExtra&&hitNo>=totalHits-actor._consumeGunshinExtra&&actor._gunshinFlat)flat+=actor._gunshinFlat;
+  if(n==='Celestial Smite'&&hitNo===1)mult*=FULL_fab(actor)?1.80:1.25;
+  if(n==='Triple Petal Slash'&&FULL_fab(actor)&&hitNo===3){mult=1.50;ignore=true;meta.tripleFinal=true}
+  if(n==='Tunnel Strike'&&target){const living=FULL_alive(foes),idx=living.indexOf(target);if(idx>=0&&idx+1<living.length&&r()<(FULL_fab(actor)?.85:.70)){actual=living[idx+1];mult*=FULL_fab(actor)?1.50:1.20;meta.tunnel=true;meta.tunnelOriginalHp=actual.hp}}
+  if(n==='Unstoppable Force'&&actor._firstAttack&&hitNo===0){const living=FULL_alive(foes);if(living.length>1){const front=living[0],pos=foes.indexOf(front);foes.splice(pos,1);foes.push(front);front._entered=false;FULL_reindex(foes);actual=FULL_active(foes);meta.unstoppablePush=true;if(FULL_fab(actor))mult*=.75}else mult*=FULL_fab(actor)?4.5:3.5;actor._unstoppableUsed=true}
+  if(n==='Till Death Do Us Part'){if(hitNo===0)actor.hp=Math.max(1,actor.hp-Math.floor(actor.hp*(FULL_fab(actor)?.10:.15)));const proc=r()<(FULL_fab(actor)?.65:.50);meta.romeoProc=proc;if(proc&&actual){mult*=1+(FULL_fab(actor)?.55:.40);flat+=Math.floor(actual.max*(FULL_fab(actor)?.07:.05));actor._romeoProcs=(actor._romeoProcs||0)+1}}
+  if(n==='Pull of the Deep'&&actual){const living=FULL_alive(foes),pos=Math.max(0,living.indexOf(actual)),arr=FULL_fab(actor)?[1,.80,.65,.50]:[.25,.20,.15,.10];mult*=1+(arr[Math.min(pos,3)]||0)}
+  return{target:actual,mult,ignore,flat,meta};
+}
+function FULL_afterPrimaryHit(actor,hitTarget,dealt,killed,own,foes,r,ctx,hitMeta,queue){
+  const n=actor.ability?.name;
+  if(n==='Void Beam'){actor._voidBeamCount=(actor._voidBeamCount||0)+1;if(FULL_fab(actor)||actor._voidBeamCount%2===0){const d=Math.floor(actor.atk*.50);if(hitTarget&&!hitTarget.dead)FULL_effectDamage(actor,hitTarget,d,r,ctx);const living=FULL_alive(foes),idx=Math.max(0,living.indexOf(hitTarget)),nx=living[idx+1]||living.find(x=>x!==hitTarget);if(nx)FULL_effectDamage(actor,nx,d,r,ctx)}}
+  if(n==='Between Worlds'&&actor._betweenExtra){for(let i=0;i<actor._betweenExtra;i++)queue.push({mult:1,kind:'between'});actor._betweenExtra=0}
+  if(actor._chainAttack?.length){for(const m of actor._chainAttack)queue.push({mult:m,kind:'chain'});actor._chainAttack=[]}
+  if(n==='Tunnel Strike'&&FULL_fab(actor)&&hitMeta?.tunnel&&killed){const raw=Math.floor(actor.atk*hitMeta.mult+hitMeta.flat),excess=Math.max(0,raw-(hitMeta.tunnelOriginalHp||0)),nx=FULL_active(foes);if(excess&&nx)FULL_effectDamage(actor,nx,excess,r,ctx,true,{tunnelCarry:true})}
+}
+
+battle=function(pt,et,r,cid,debug=false){
+  const events=debug?[]:null,ctx={team:f=>f?.side==='p'?pt:et,opponentTeam:f=>f?.side==='p'?et:pt,all:[pt,et],_janusUsed:{p:false,e:false},bonusSide:null};FULL_CONTEXT=ctx;FULL_initTeams(pt,et);
+  const initialAllies=debug&&typeof teamDbg==='function'?teamDbg(pt):null,initialEnemies=debug&&typeof teamDbg==='function'?teamDbg(et):null;
+  let before=FULL_snapshot(pt,et);teamStart(pt,et,cid);if(debug&&before){for(const f of FULL_alive(pt))FULL_logAbility(events,0,f,'Battle start',before,pt,et)}
+  before=FULL_snapshot(pt,et);teamStart(et,pt,'');if(debug&&before){for(const f of FULL_alive(et))FULL_logAbility(events,0,f,'Battle start',before,pt,et)}
+  FULL_CONTEXT=ctx;FULL_ensureEntry(pt,et,r,ctx,events,0,pt,et);FULL_ensureEntry(et,pt,r,ctx,events,0,pt,et);FULL_resolveTeamDeaths(pt,et,null,r,ctx,events,0);
+  let side='p',actions=0,changes=0,turn=0,guard=0;
+  while(guard++<2500){
+    FULL_ensureEntry(pt,et,r,ctx,events,turn,pt,et);FULL_ensureEntry(et,pt,r,ctx,events,turn,pt,et);
+    const pa=FULL_active(pt),ea=FULL_active(et);if(!pa||!ea){const win=!!pa&&!ea;return{win,actions,changes,debug:debug?{floor:ctx.floor,initialAllies,initialEnemies,events,finalAllies:teamDbg(pt),finalEnemies:teamDbg(et)}:undefined}}
+    const originalSide=ctx.bonusSide||side;if(ctx.bonusSide)ctx.bonusSide=null;let own=originalSide==='p'?pt:et,foes=originalSide==='p'?et:pt,actor=FULL_active(own),target=FULL_active(foes);
+    const thief=target&&FULL_enabled(target,ctx)&&target.ability?.name==='Turn Theft'&&!target._turnTheftUsed?target:null;if(thief){thief._turnTheftUsed=true;actor=thief;own=FULL_team(thief,ctx);foes=FULL_enemyTeam(thief,ctx);target=FULL_active(foes)}
+    turn++;
+    if(actor.frozen){actor.frozen--;FULL_logEvent(events,{turn,type:'stall',team:FULL_teamName(actor),card:actor.card.name,detail:'Frozen — turn skipped'});side=originalSide==='p'?'e':'p';continue}
+    if(actor.skip){actor.skip--;FULL_logEvent(events,{turn,type:'stall',team:FULL_teamName(actor),card:actor.card.name,detail:'Stunned — turn skipped'});side=originalSide==='p'?'e':'p';continue}
+    if(actor._confused){const allies=FULL_alive(own).filter(x=>x!==actor),ally=allies.length?pick(r,allies):null;if(ally){const m=actor._confused.mult||1,FULL_before=FULL_snapshot(pt,et);const d=damage(actor,ally,Math.floor(actor.atk*m),r,ctx,false,{confused:true});actions++;FULL_logEvent(events,{turn,type:'turn',team:FULL_teamName(actor),card:actor.card.name,detail:`vs ${ally.card.name} | attacker ${Math.floor(actor.hp)}/${Math.floor(actor.max)} HP ${Math.floor(actor.atk)} ATK | defender ${Math.floor(ally.hp+d)}/${Math.floor(ally.max)} HP ${Math.floor(ally.atk)} ATK`});FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn)}actor._confused=null;side=originalSide==='p'?'e':'p';continue}
+    const preSnap=FULL_snapshot(pt,et),pre=turnStart(actor,target,own,foes,r,ctx);FULL_logAbility(events,turn,actor,'Turn effect',preSnap,pt,et);FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn);if(actor.dead||actor.hp<=0){side=originalSide==='p'?'e':'p';continue}
+    target=pre.target||FULL_active(foes);let attacks=Math.max(0,pre.attacks||0),baseMult=pre.mult??1;
+    const queue=[];for(let i=0;i<attacks;i++)queue.push({mult:baseMult,kind:'base',baseIndex:i,baseTotal:attacks});
+    if(actor._extraTurnAfterRevive){actor._extraTurnAfterRevive=false;queue.push({mult:1,kind:'reviveBonus'})}
+    let qIndex=0,romeoStart=actor._romeoProcs||0;
+    while(qIndex<queue.length&&qIndex<24){const item=queue[qIndex++];target=FULL_active(foes);if(!target)break;FULL_ensureEntry(foes,own,r,ctx,events,turn,pt,et);target=FULL_active(foes);if(!target)break;
+      if(target.ability?.name==='Unshaken Form'&&item.kind==='base'&&(item.baseIndex||0)>0)continue;
+      FULL_beforeHitAuras(actor,target,own,foes,r,ctx,events,turn);FULL_resolveTeamDeaths(pt,et,target,r,ctx,events,turn);if(actor.dead||actor.hp<=0)break;target=FULL_active(foes);if(!target)break;
+      const prep=FULL_prepareHit(actor,target,foes,r,ctx,item.baseIndex||0,item.baseTotal||1,item.mult);target=prep.target||target;if(prep.meta.unstoppablePush&&target&&!target._entered){target._entered=true;const es=FULL_snapshot(pt,et);enter(target,actor,foes,own,r,ctx);FULL_logAbility(events,turn,target,'On entry',es,pt,et);FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn);target=FULL_active(foes)||target}const raw=Math.max(0,Math.floor(actor.atk*prep.mult+prep.flat)),defBefore=target.hp,atkBefore=actor.hp;
+      FULL_logEvent(events,{turn,type:'turn',team:FULL_teamName(actor),card:actor.card.name,detail:`vs ${target.card.name} | attacker ${Math.floor(actor.hp)}/${Math.floor(actor.max)} HP ${Math.floor(actor.atk)} ATK | defender ${Math.floor(target.hp)}/${Math.floor(target.max)} HP ${Math.floor(target.atk)} ATK`});
+      const snap=FULL_snapshot(pt,et),dealt=damage(actor,target,raw,r,ctx,prep.ignore,{...prep.meta,direct:true});actions++;const actual=ctx._lastDamageTarget||target;let killed=false;if(actual.hp<=0&&!actual.dead)killed=die(actual,actor,FULL_team(actual,ctx),FULL_enemyTeam(actual,ctx),r,ctx);FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn);if(killed){changes++;FULL_logEvent(events,{turn,type:'death',team:FULL_teamName(actual),card:actual.card.name,detail:`Defeated by ${actor.card.name} · ${Math.floor(dealt)} damage`})}else if(actual.hp>0&&defBefore>0&&actual===target&&target.hp>0&&target.hp!==defBefore&&debug&&raw!==dealt)FULL_logAbility(events,turn,actual,'Defense interaction',snap,pt,et,[`incoming ${raw} → ${dealt}`]);
+      const afterSnap=FULL_snapshot(pt,et);after(actor,actual,dealt,own,foes,r,ctx,killed,{...prep.meta,mult:prep.mult,flat:prep.flat,targetWasFrozen:prep.meta.targetWasFrozen});FULL_logAbility(events,turn,actor,'After attack',afterSnap,pt,et,killed?['enemy defeated']:[]);FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn);
+      FULL_afterPrimaryHit(actor,actual,dealt,killed,own,foes,r,ctx,{...prep.meta,mult:prep.mult,flat:prep.flat},queue);
+      if(actor._firstAttack)actor._firstAttack=false;actor._attackCount=(actor._attackCount||0)+1;
+      if(!FULL_active(foes))break;FULL_ensureEntry(foes,own,r,ctx,events,turn,pt,et);
+    }
+    if(actor.ability?.name==='Till Death Do Us Part'&&FULL_fab(actor)&&(actor._romeoProcs||0)-romeoStart>=2)heal(actor,Math.floor(actor.max*.15));
+    if(actor._consumeGunshinExtra){actor._consumeGunshinExtra=0;actor._gunshinFlat=0}
+    FULL_endTurn(actor,own,foes,r,ctx);FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn);
+    side=originalSide==='p'?'e':'p';if(ctx.bonusSide)side=ctx.bonusSide;
+  }
+  FULL_logEvent(events,{turn,type:'stall',team:'System',card:'Battle',detail:'Turn limit reached'});return{win:!FULL_active(et)&&!!FULL_active(pt),actions,changes,debug:debug?{initialAllies,initialEnemies,events,finalAllies:teamDbg(pt),finalEnemies:teamDbg(et)}:undefined};
+};
+
+replayBattle=function(pt,et,r,cid,floor){const out=battle(pt,et,r,cid,true);if(out.debug)out.debug.floor=floor;return out};
+
+// Lightweight runtime smoke audit: every unique ability is represented, and every Fabled
+// description extracted from the game is available to the automatic Fabled-border path.
+window.CARDBORN_ABILITY_AUDIT={cards:CARDS.length,uniqueAbilities:FULL_ALL_ABILITIES.length,handled:FULL_HANDLED.size,missing:[...FULL_MISSING],fabled:Object.keys(FABLED).length,ok:FULL_MISSING.length===0&&FULL_HANDLED.size===FULL_ALL_ABILITIES.length};

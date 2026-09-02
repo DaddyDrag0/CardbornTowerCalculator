@@ -1,0 +1,130 @@
+  else if(n==='Rotten Pact'){const last=FULL_lastAlive(own.filter(x=>x!==f));if(last)last.atk+=Math.floor(f.atk*1.50);f._rottenTurns=FULL_fab(f)?4:2}
+  else if(n==='Fate Reversal')f._fateReady=true;
+  else if(n==='Titan’s Kindness')f._titanHadDeath=own.some(x=>x!==f&&x.dead);
+  else if(n==='Borrowed Mask'){const prev=FULL_prevAny(f,own);if(prev?.dead&&prev.ability?.name){f.ability={...prev.ability};f._borrowed=true}}
+};
+
+const FULL_initLegacy=FULL_init;
+FULL_init=function(f){f=FULL_initLegacy(f);if(!f)return f;if(!f._heavenProtected)f._heavenProtected=new Set();if(!f._holdProtected)f._holdProtected=new Set();if(f._cocoonTurns==null)f._cocoonTurns=2;if(f._cocoonBurstDone==null)f._cocoonBurstDone=false;if(f._criticalLost==null)f._criticalLost=0;if(f._reviveChance==null)f._reviveChance=.35;return f};
+function FULL_prevAny(f,team){const i=(team||[]).indexOf(f);return i>0?team[i-1]:null}
+const FULL_teamStartLegacy=teamStart;
+teamStart=function(own,foes,cid){FULL_teamStartLegacy(own,foes,cid);for(const f of own||[]){FULL_init(f);if(FULL_enabled(f,FULL_CONTEXT)&&f.ability?.name==='Amethyst Armor')f.dr=Math.max(f.dr,FULL_fab(f)?.20:.10)}};
+
+function FULL_specterAuras(teams){
+  for(const team of teams)for(const s of FULL_alive(team).filter(x=>FULL_enabled(x,FULL_CONTEXT)&&x.ability?.name==='Haunting Presence'))for(const x of FULL_alive(team))heal(x,Math.floor(x.max*(FULL_fab(s)?.08:.05)));
+}
+function FULL_cleanseOne(f){if(f.frozen){f.frozen=0;return}if(f.skip){f.skip=0;return}if(f._ampTaken){f._ampTaken=0;f._deathWhisper=null;f._prisonAmp=0;return}if(f._umbralMark){f.atk+=f._umbralMark.lostAtk||0;f._umbralMark=null}}
+function FULL_stealStats(f,t,hpPct,atkPct=hpPct,cap=Infinity,key='steal'){
+  if(!f||!t)return;FULL_init(f);const h=Math.min(Math.max(0,t.max-1),Math.max(0,Math.floor(t.max*hpPct))),a=Math.min(Math.max(0,t.atk-1),Math.max(0,Math.floor(t.atk*atkPct)));
+  const hk=`_${key}Hp`,ak=`_${key}Atk`,maxH=Math.floor(f._originalMax*cap),maxA=Math.floor(f._originalAtk*cap);let gh=h,ga=a;
+  if(Number.isFinite(cap)){gh=Math.min(gh,Math.max(0,maxH-(f[hk]||0)));ga=Math.min(ga,Math.max(0,maxA-(f[ak]||0)))}
+  if(gh){t.max=Math.max(1,t.max-gh);t.hp=Math.min(t.hp,t.max);f.max+=gh;f.hp+=gh;f[hk]=(f[hk]||0)+gh}
+  if(ga){t.atk=Math.max(1,t.atk-ga);f.atk+=ga;f[ak]=(f[ak]||0)+ga}
+}
+
+turnStart=function(f,t,own,foes,r,ctx){
+  FULL_CONTEXT=ctx;FULL_initTeams(own,foes);FULL_init(f);f.turn=(f.turn||0)+1;FULL_expireTimed(f);FULL_specterAuras([own,foes]);
+  if(f._decayCurse){f._decayCurse=null}
+  if(f._thrallTurns){f._thrallTurns--;if(f._thrallTurns<0){f.hp=0;return{mult:0,attacks:0,target:t}}}
+  if(f._impactHeal){heal(f,Math.floor(f.max*.25));f._impactHeal=false}
+  let mult=1,attacks=1,target=t;
+  if(!FULL_enabled(f,ctx))return{mult,attacks,target};const n=f.ability.name;
+
+  if(n==='Focused Aim'&&f._firstAttack)mult*=FULL_fab(f)?1.40:1.15;
+  else if(n==='Peasant’s Bravery'&&f.hp/f.max<(FULL_fab(f)?.50:.30))mult*=1+(FULL_fab(f)?.40:.10);
+  else if(n==='Backstab'){const last=f.index>=own.length-1,secondLast=f.index>=own.length-2;if(FULL_fab(f)?secondLast:last)mult*=FULL_fab(f)?1.60:1.30}
+  else if(n==='Flame Wall'&&f.turn<=2&&target){const pct=FULL_fab(f)?.10:.08;FULL_effectDamage(f,target,Math.floor(target.max*pct),r,ctx,true,{burn:true});if(FULL_fab(f))target.atk=Math.max(1,Math.floor(target.atk*.90))}
+  else if(n==='Dark Pact'){const hpPct=FULL_fab(f)?.05:.10,atkPct=FULL_fab(f)?.20:.10;f.hp=Math.max(1,f.hp-Math.floor(f.hp*hpPct));f.atk=Math.floor(f.atk*(1+atkPct))}
+  else if(n==='Holy Strike'){const amount=Math.floor(f.max*.15),before=f.hp;heal(f,amount);if(FULL_fab(f))f.atk+=Math.max(0,f.hp-before)}
+  else if(n==='Treasure')for(const x of FULL_alive(own))heal(x,Math.floor(f.max*(FULL_fab(f)?.09:.05)));
+  else if(n==='Reflective Coil'&&target){if(FULL_fab(f)){const maxLoss=Math.floor(target._originalAtk*.50),left=Math.max(0,maxLoss-(target._reflectReduction||0)),cut=Math.min(left,Math.floor(target.atk*.20));target.atk=Math.max(1,target.atk-cut);target._reflectReduction=(target._reflectReduction||0)+cut}else if(r()<.50)target.atk=Math.max(1,Math.floor(target.atk*.85))}
+  else if(n==='Fine Print'&&target){if(f.turn===1){const q=FULL_fab(f)?.15:.20,amt=Math.floor(f.atk*q);f.atk=Math.max(1,f.atk-amt);target.atk+=amt;f._finePrint={target,amt}}else if(f.turn===2&&f._finePrint){const z=f._finePrint;if(z.target&&!z.target.dead)z.target.atk=Math.max(1,z.target.atk-z.amt);f.atk+=z.amt;f.atk=Math.floor(f.atk*(FULL_fab(f)?2:1.8));if(FULL_fab(f))f.hp=f.max;f._finePrint=null}}
+  else if(n==='Crystal Slam'&&r()<(FULL_fab(f)?.80:.50)){mult*=FULL_fab(f)?1.30:1.10;heal(f,Math.floor(f.max*(FULL_fab(f)?.15:.10)))}
+  else if(n==='Arcane Mastery'&&target){const proc=FULL_fab(f)||r()<.40;if(proc)FULL_stealStats(f,target,FULL_fab(f)?.07:.10,FULL_fab(f)?.07:.10,Infinity,'arcane')}
+  else if(n==='Chaotic Contraption'){const roll=Math.floor(r()*3);if(roll===0)f.atk=Math.floor(f.atk*(FULL_fab(f)?2.20:1.20));else if(roll===1)heal(f,Math.floor(f.max*(FULL_fab(f)?.30:.10)));else{const d=Math.floor(f.atk*(FULL_fab(f)?.40:.10));for(const x of [...FULL_alive(own),...FULL_alive(foes)])if(x!==f)FULL_effectDamage(f,x,d,r,ctx,true,{aoe:true});FULL_effectDamage(f,f,d,r,ctx,true,{aoe:true})}}
+  else if(n==='Elemental Fury'&&target){if(r()<.50)FULL_freeze(target,1);else FULL_effectDamage(f,target,Math.floor(target.max*(FULL_fab(f)?.14:.10)+(FULL_fab(f)?f.atk*.20:0)),r,ctx,true,{elemental:true})}
+  else if(n==='Dark Ritual'&&!f._darkRitual&&f.hp/f.max<(FULL_fab(f)?.75:.60)){f._darkRitual=true;const total=own.filter(x=>x.dead).reduce((s,x)=>s+(x.atk||0),0);f.atk+=Math.floor(total*(FULL_fab(f)?.65:.50))}
+  else if(n==='The Coming of the Year'){const q=(FULL_fab(f)?.02:.01)+.02*(f.turn-1);buff(f,q);if(FULL_fab(f)&&f.turn%3===0)heal(f,Math.floor(f.max*.30))}
+  else if(n==='Weak Growth'){buff(f,FULL_fab(f)?.06:.05);if(FULL_fab(f))heal(f,Math.floor(f.max*.08))}
+  else if(n==='Crystalline Prison'&&f.turn%2===0){const e=pick(r,FULL_alive(foes));if(e){FULL_stun(e,1);FULL_effectDamage(f,e,Math.floor(e.max*.15),r,ctx,true,{prison:true});if(FULL_fab(f)){e._prisonAmp=.25;e._ampTaken=(e._ampTaken||0)+.25;e._prisonAmpExpire=(e.turn||0)+1}}}
+  else if(n==='Stricken Terror'&&f.turn%2===0&&target&&r()<.65)FULL_stealStats(f,target,FULL_fab(f)?.30:.20,FULL_fab(f)?.30:.20,FULL_fab(f)?3.5:3,'stricken');
+  else if(n==='Radiant Burst'){for(const x of FULL_alive(own))buffHp(x,FULL_fab(f)?.10:.07);for(const x of [...FULL_alive(foes)])FULL_effectDamage(f,x,Math.floor(x.hp*.07+(FULL_fab(f)?f.atk*.10:0)),r,ctx,true,{burn:true})}
+  else if(n==='Soulpierce Arrow'){let chance=FULL_fab(f)?(.20+(f._soulCritStack||0)):.15;if(r()<chance){mult*=3;f._soulCritStack=0}else if(FULL_fab(f))f._soulCritStack=Math.min(.80,(f._soulCritStack||0)+.05)}
+  else if(n==='Frost Breath'&&target){if(r()<(FULL_fab(f)?.40:.35))FULL_freeze(target,1);if(target.frozen)mult*=1+(FULL_fab(f)?1.50:.60)}
+  else if(n==='Demonic Fury'){const steps=Math.floor((1-f.hp/f.max)*10),bonus=Math.min(FULL_fab(f)?.90:.50,steps*(FULL_fab(f)?.20:.10));f.atk=Math.max(f.atk,Math.floor(f._originalAtk*(1+bonus)))}
+  else if(n==='Critical Mass'){mult*=FULL_fab(f)?4:3;const before=f.atk;f.atk=Math.max(1,Math.floor(f.atk*.75));f._criticalLost=(f._criticalLost||0)+(before-f.atk)}
+  else if(n==='Immortal Scales'){if(!f._scalesTriggered&&f.hp/f.max<(FULL_fab(f)?.60:.50)){f._scalesTriggered=true;heal(f,Math.floor(f.max*(FULL_fab(f)?.65:.50)))}else if(f._scalesTriggered)f.atk=Math.floor(f.atk*(1+(FULL_fab(f)?.15:.10)))}
+  else if(n==='Strut & Strike'){f._henStance=((f._henStance||0)+1)%2;if(f._henStance===1)f._henReduce=FULL_fab(f)?.45:.30;else if(target&&rarity(target.card,target.flags)<rarity(f.card,f.flags))mult*=1+(FULL_fab(f)?1.20:.80)}
+  else if(n==='Winter’s Grasp'&&target){}
+  else if(n==='Double or Nothing'){const fail=r()<(FULL_fab(f)?.35:.50);mult*=fail?0:(FULL_fab(f)?3:2)}
+  else if(n==='Dragon Mother'&&f.turn%2===0){const w=BY.get('Wyrmling');if(w){const fl=flags();if(FULL_fab(f))fl.fabled=true;const z=fighter(w,fl,f.side,own.length);FULL_init(z);own.push(z);FULL_reindex(own)}}
+  else if(n==='Triple Petal Slash'){attacks=FULL_fab(f)?4:3;mult*=FULL_fab(f)?.70:.75}
+  else if(n==='Near Perfection'){const opts=[];if(f.hp/f.max<.75)opts.push('heal');if(target&&target.hp>f.atk)opts.push('damage');opts.push('dodge');const use=FULL_fab(f)?[...new Set(opts)].slice(0,2):[opts[0]];for(const x of use){if(x==='heal')heal(f,Math.floor(f.max*(FULL_fab(f)?.25:.20)));if(x==='damage')mult*=1+(FULL_fab(f)?.75:.50);if(x==='dodge')f._bonusDodge=Math.max(f._bonusDodge,FULL_fab(f)?.45:.35)}}
+  else if(n==='Flow State'&&f._flowOn)attacks=2;
+  else if(n==='Unstable Power'){const lo=FULL_fab(f)?.80:.60,hi=FULL_fab(f)?3.20:2.50,roll=lo+r()*(hi-lo);mult*=roll;if(FULL_fab(f)&&roll>2)f.atk=Math.floor(f.atk*1.15)}
+  else if(n==='Imperial Advance')attacks=2;
+  else if(n==='Endless Hunger'&&r()<(FULL_fab(f)?.55:.40))buff(f,FULL_fab(f)?.25:.20);
+  else if(n==='Celestial Smite')attacks=2;
+  else if(n==='Treacherous Feast'){const e=pick(r,FULL_alive(foes));if(e){const res=FULL_effectDamage(f,e,Math.floor(f.atk*(FULL_fab(f)?1:.20)),r,ctx);if(res.killed)f.hp=f.max}}
+  else if(n==='King’s Command'&&f.turn%2===0&&target){FULL_effectDamage(target,target,Math.floor(target.atk*.65),r,ctx,true,{selfHit:true});if(FULL_fab(f))for(const d of FULL_alive(own).filter(x=>x!==f&&FULL_isDragon(x)))FULL_addBlock(d,1);attacks=0}
+  else if(n==='Titan’s Kindness'){if(f._titanHadDeath){if(!f._titanPowerUsed){mult*=FULL_fab(f)?4.5:3;f._titanPowerUsed=true}}else{for(const x of FULL_alive(own))buff(x,FULL_fab(f)?.15:.10);attacks=0}}
+  else if(n==='Kings Vision')buff(f,.15);
+  else if(n==='Assassin’s Blizzard'){target=FULL_lowest(foes)||target;if(target?.frozen)mult*=FULL_fab(f)?2:1.40}
+  else if(n==='Necrotic Bloom'&&f.turn%2===0){FULL_addBlock(f,1);for(const x of FULL_alive(own))heal(x,Math.floor(x.max*(FULL_fab(f)?.12:.08)))}
+
+  if(f._ambushDouble){mult*=2;f._ambushDouble=false}
+  if(f._umbralNext){mult*=f._umbralNext;f._umbralNext=0}
+  if(f._creatorExtra){attacks+=f._creatorExtra;f._creatorExtra=0}
+  if(f._gunshinExtra){attacks+=f._gunshinExtra;f._consumeGunshinExtra=f._gunshinExtra;f._gunshinExtra=0}
+  return{mult,attacks,target};
+};
+
+function FULL_redirect(a,t,d,r,ctx,ignore,meta){
+  if(ignore||meta?.direct===false||!a||!t)return{target:t,damage:d,blocked:false};const team=FULL_team(t,ctx);
+  const protector=FULL_alive(team).find(x=>x!==t&&FULL_enabled(x,ctx)&&x.ability?.name==='Hold the Line');
+  if(protector){FULL_init(protector);if(!protector._holdProtected.has(t)){protector._holdProtected.add(t);return{target:protector,damage:FULL_fab(protector)?Math.floor(d*.40):d,blocked:false,redirected:true}}}
+  if(FULL_enabled(t,ctx)&&t.ability?.name==='Endless Reign'&&!t._reignUsed){const last=FULL_lastAlive(team);if(last&&last!==t){t._reignUsed=true;const miss=1-last.hp/Math.max(1,last.max),q=Math.min(FULL_fab(t)?1.20:.85,Math.max(0,miss));if(q)buff(t,q);return{target:last,damage:FULL_fab(t)?0:d,blocked:FULL_fab(t),redirected:true}}}
+  return{target:t,damage:d,blocked:false};
+}
+
+incoming=function(t,a,d,r,ctx,ignore=false,meta={}){
+  if(!t||d<=0)return 0;FULL_CONTEXT=ctx;FULL_init(t);FULL_init(a);const perfect=ignore||a?.ability?.name==='Perfect Strike';let amount=Math.max(0,Math.floor(d));
+  if((t._ampTaken||0)>0&&!perfect)amount=Math.floor(amount*(1+t._ampTaken));
+  if(t._vorrathAmpSource===a&&!perfect)amount=Math.floor(amount*1.25);
+  if(t._umbralMark?.source===a&&!perfect)amount=Math.floor(amount*(1+t._umbralMark.amp));
+  if(perfect)return amount;
+
+  for(const s of FULL_alive(FULL_team(t,ctx)).filter(x=>FULL_enabled(x,ctx)&&x.ability?.name==='Haunting Presence'))amount=Math.floor(amount*(1-(FULL_fab(s)?.22:.15)));
+  for(const theo of FULL_alive(FULL_team(t,ctx)).filter(x=>FULL_enabled(x,ctx)&&x.ability?.name==="Heaven's Threshold")){FULL_init(theo);if(!theo._heavenProtected.has(t)){theo._heavenProtected.add(t);amount=Math.floor(amount*(1-(FULL_fab(theo)?.60:.45)));buff(theo,FULL_fab(theo)?.18:.12)}}
+
+  if(FULL_enabled(t,ctx)){const n=t.ability.name;
+    if(n==='Nature’s Guardian'&&!t._natureBlocked){t._natureBlocked=true;if(FULL_fab(t))buff(t,.15);return 0}
+    if(n==='Resilience'&&t.hp/t.max>(FULL_fab(t)?.20:.40))amount=Math.floor(amount*(1-(FULL_fab(t)?.25:.15)));
+    if(n==='Scurrying Escape'&&r()<(FULL_fab(t)?.35:.20)){heal(t,Math.floor(t.max*(FULL_fab(t)?.15:.10)));return 0}
+    if(n==='Eye of the Storm'&&r()<.35){if(FULL_fab(t))t._eyeNext=1.50;return 0}
+    if(n==='Seasoned Veteran')amount=Math.min(amount,Math.floor(t.max*(FULL_fab(t)?.30:.35)));
+    if(n==='Grace of the Divine'&&amount<t.max*(FULL_fab(t)?.35:.25)){heal(t,Math.floor(amount*(FULL_fab(t)?1.25:1)));return 0}
+    if(n==='Mind Fracture'&&r()<(FULL_fab(t)?.25:.15))return 0;
+    if(n==='Astral Blessing'&&r()<(FULL_fab(t)?.45:.40)){for(const x of FULL_alive(FULL_team(t,ctx))){buff(x,FULL_fab(t)?.15:.10);if(FULL_fab(t))heal(x,Math.floor(x.max*.05))}return 0}
+    if(n==='Royal Decree: Silence'){const chance=Math.min(FULL_fab(t)?.75:.60,(FULL_fab(t)?.35:.30)+(t._royalHits||0)*.10);if(r()<chance){if(FULL_fab(t))t.atk=Math.floor(t.atk*1.15);return 0}}
+    if(n==='Between Worlds'){t._betweenHit=(t._betweenHit||0)+1;if(t._betweenHit%2===0)amount=Math.floor(amount*.30)}
+    if(n==='Arcane Cataclysm'){const q=t._arcaneThreshold||.25,th=Math.floor(t.max*q);if(amount<th)return 0;amount=Math.max(0,amount-th);t._arcaneThreshold=Math.min(.50,q+.05)}
+    if(n==='Frozen Guard'&&r()<(FULL_fab(t)?.55:.40))FULL_freeze(a,FULL_fab(t)?2:1);
+    if(n==='Endless Winter'&&amount>=t.hp&&!t._winterSaved){t._winterSaved=true;heal(t,amount);if(FULL_fab(t))FULL_freeze(a,2);return 0}
+    if(n==='Moment of Impact'&&amount>=t.hp&&!t._impactSaved){t._impactSaved=true;FULL_stun(a,1);if(FULL_fab(t))t._impactHeal=true;return Math.max(0,t.hp-1)}
+    if(n==='Refraction'){const reflected=Math.floor(amount*.30);FULL_effectDamage(t,a,reflected,r,ctx,true,{reflect:true});if(FULL_fab(t))heal(t,Math.floor(reflected*.60))}
+    if(n==='Slip Between Shadows'){const lo=FULL_fab(t)?.30:.40,hi=FULL_fab(t)?.65:.75,factor=lo+r()*(hi-lo);amount=Math.floor(amount*factor);if(factor<=(FULL_fab(t)?.40:.45))FULL_stun(a,1)}
+    if(n==='Inverse Law'){const cut=Math.min(amount,Math.floor(t.atk*(FULL_fab(t)?.40:.30)));amount-=cut;if(FULL_fab(t)&&cut)t.atk+=Math.floor(cut*.15)}
+    if(n==='Crushing Cold'&&rarity(a.card,a.flags)<rarity(t.card,t.flags))amount=Math.floor(amount*(1-(FULL_fab(t)?.35:.20)));
+    if(n==='Fate Reversal'&&t._fateReady){t._fateReady=false;const ref=Math.floor(amount*(FULL_fab(t)?.60:.35));const res=FULL_effectDamage(t,a,ref,r,ctx,true,{reflect:true});if(res.killed)heal(t,Math.floor(t.max*(FULL_fab(t)?.75:.50)));return 0}
+    if(n==='Puppet Strings'){const uses=FULL_fab(t)?2:1;t._puppetUses=t._puppetUses||0;if(t._puppetUses<uses&&amount>=t.hp){const ally=FULL_lowest(FULL_team(a,ctx),a);if(ally){t._puppetUses++;FULL_effectDamage(a,ally,Math.floor(amount*(FULL_fab(t)?1.25:1)),r,ctx,false,{redirect:true});return 0}}}
+    if(n==='Tip the Guard'&&FULL_fab(t)&&amount>=t.hp&&!t._tipSaved){t._tipSaved=true;return Math.max(0,t.hp-1)}
+    if(n==='Strut & Strike'&&t._henReduce){amount=Math.floor(amount*(1-t._henReduce));t._henReduce=0}
+    if(n==='Cocooned Protection'&&t._cocoonTurns>0){const prevented=Math.floor(amount*.40);amount-=prevented;t._cocoonAbsorbed+=prevented}
+  }
+  if(t._bonusDodge&&r()<t._bonusDodge)return 0;
+  if(t.shieldHp>0){const before=t.shieldHp,q=Math.min(t.shieldHp,amount);t.shieldHp-=q;amount-=q;if(before>0&&t.shieldHp<=0&&t._solarBurnPct&&a)FULL_effectDamage(t,a,Math.floor(a.max*t._solarBurnPct),r,ctx,true,{burn:true});if(amount<=0)return 0}
+  if(t.shields>0){t.shields--;return 0}
+  amount=Math.floor(amount*(1-clamp(t.dr||0,0,.90)));
+  return Math.max(0,amount);
+};

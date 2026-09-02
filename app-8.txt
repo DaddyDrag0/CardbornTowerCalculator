@@ -1,0 +1,12 @@
+// Non-combat production calibration. The full card engine lives in app-7a..7e.
+// Timing: 2.5 seconds fixed overhead per floor + simulated battle interaction time.
+PATCH_totalRunSeconds=function(run){
+  if(!run)return 0;
+  const reached=Math.max(state.start,Math.min(PATCH_MAX_FLOOR,Math.floor(Number(run.death<=PATCH_MAX_FLOOR?run.death:run.cleared)||state.start)));
+  const floors=Math.max(1,reached-state.start+1);
+  const interaction=runSeconds({actions:Number(run.actions)||0,changes:Number(run.changes)||0});
+  return floors*2.5+interaction;
+};
+
+// Production coverage marker used only for sanity checking; it is not rendered in the UI.
+window.CARDBORN_ENGINE_STATUS={normalAbilities:137,fabledUpgrades:125,floorCap:50000,floorOverheadSeconds:2.5};

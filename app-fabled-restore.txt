@@ -1,0 +1,6 @@
+for(const k of Object.keys(FABLED))if(!Object.prototype.hasOwnProperty.call(EXTRACTED_FABLED,k))delete FABLED[k];
+Object.assign(FABLED,EXTRACTED_FABLED);
+const REAL_FABLED_IMPLEMENTED=new Set(['Field Guardian','Peasant’s Bravery','Pillage','Focused Aim','Ambush','Purifying Light','Nature’s Guardian','Dark Pact','Backstab','Resilience','Holy Strike','Double Strike','Scurrying Escape','Savage Fury','Imperial Advance','Grace of the Divine','Soul Reservoir','Endless Hunger','Celestial Smite','King’s Command','Fate Reversal','Royal Decree: Silence','Crushing Cold','Assassin’s Blizzard','Endless Winter','Necrotic Bloom','Tainted Vitality','Festering Edge','Curse of Decay','Void Devastation','Event Horizon','Furnace Heart','Nullify']);
+const REAL_FABLED_MISSING=Object.keys(EXTRACTED_FABLED).filter(n=>!REAL_FABLED_IMPLEMENTED.has(n)||!FULL_HANDLED.has(n));
+const REAL_FABLED_EXTRA=[...REAL_FABLED_IMPLEMENTED].filter(n=>!Object.prototype.hasOwnProperty.call(EXTRACTED_FABLED,n));
+if(REAL_FABLED_MISSING.length||REAL_FABLED_EXTRA.length)console.error('Cardborn Fabled audit mismatch',{missing:REAL_FABLED_MISSING,extra:REAL_FABLED_EXTRA});
