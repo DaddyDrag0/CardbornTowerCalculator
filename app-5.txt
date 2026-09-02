@@ -40,13 +40,16 @@ const PATCH_baseBind=bind;
 bind=function(){
   PATCH_baseBind();
 
-  for(const input of [root.querySelector('#search'),root.querySelector('#bsearch')]){
+  let searchNonce='';
+  try{searchNonce=crypto.randomUUID()}catch(_){searchNonce=String(Date.now())+Math.random().toString(36).slice(2)}
+  for(const [i,input] of [root.querySelector('#search'),root.querySelector('#bsearch')].entries()){
     if(!input)continue;
     input.setAttribute('autocomplete','off');
     input.setAttribute('autocapitalize','off');
     input.setAttribute('autocorrect','off');
     input.setAttribute('spellcheck','false');
     input.setAttribute('data-form-type','other');
+    input.setAttribute('name',`cardborn-no-history-${i}-${searchNonce}`);
   }
 
   const startInput=root.querySelector('#start');
@@ -81,6 +84,18 @@ bind=function(){
   },true));
 };
 
+const PATCH_baseRender=render;
+render=function(){
+  PATCH_baseRender();
+  const body=root.querySelector('.simulation-body');
+  if(body&&!body.querySelector('.scaling-unverified')){
+    const note=document.createElement('div');
+    note.className='scaling-unverified';
+    note.innerHTML='<b>INFINITE SCALING NEEDS CALIBRATION</b><span>The saved place does not contain the server-side Infinite Dungeon enemy stat formula. Current simulation scaling is provisional until real floor samples are fitted.</span>';
+    body.prepend(note);
+  }
+};
+
 const PATCH_style=document.createElement('style');
 PATCH_style.textContent=`
 .library-list,.floor-strip,.dbg-scroll,.run-log-grid{scrollbar-width:thin;scrollbar-color:var(--accent) var(--surface-2)}
@@ -88,5 +103,6 @@ PATCH_style.textContent=`
 .library-list::-webkit-scrollbar-track,.floor-strip::-webkit-scrollbar-track,.dbg-scroll::-webkit-scrollbar-track,.run-log-grid::-webkit-scrollbar-track{background:var(--surface-2);border-radius:999px}
 .library-list::-webkit-scrollbar-thumb,.floor-strip::-webkit-scrollbar-thumb,.dbg-scroll::-webkit-scrollbar-thumb,.run-log-grid::-webkit-scrollbar-thumb{background:var(--accent);border:2px solid var(--surface-2);border-radius:999px}
 .library-list::-webkit-scrollbar-thumb:hover,.floor-strip::-webkit-scrollbar-thumb:hover,.dbg-scroll::-webkit-scrollbar-thumb:hover,.run-log-grid::-webkit-scrollbar-thumb:hover{background:var(--accent-bright,var(--accent))}
+.scaling-unverified{margin:0 0 12px;border:1px solid #6b5429;background:#17130b;border-radius:10px;padding:9px 10px}.scaling-unverified b{display:block;color:#e0bb70;font-size:8px;letter-spacing:.08em}.scaling-unverified span{display:block;color:#9f8d6d;font-size:8px;line-height:1.45;margin-top:4px}
 `;
 document.head.appendChild(PATCH_style);
