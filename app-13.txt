@@ -1,15 +1,13 @@
 // Parallel-worker stability patch.
-// Keep the 8-way worker pool on the lightweight worker wrapper so long debug
-// timelines cannot collapse the pool into the one-thread fallback.
-//
-// Important: showRunDebug is scoped inside app-4's UI closure, so this patch must
-// not reference or override it from here.
+// Bulk simulation uses the lightweight sim-worker directly. The worker skips battle
+// debug replay during the run, so a long/stalled battle cannot collapse the 8-way
+// pool into the one-thread fallback.
 
 PROGRESS_createWorkers=function(count){
   if(typeof Worker!=='function')return[];
   const out=[];
   try{
-    for(let i=0;i<count;i++)out.push(new Worker('./sim-worker-fast.js?v=1'));
+    for(let i=0;i<count;i++)out.push(new Worker('./sim-worker.js?v=30'));
     return out;
   }catch(err){
     out.forEach(w=>{try{w.terminate()}catch(_){}});
