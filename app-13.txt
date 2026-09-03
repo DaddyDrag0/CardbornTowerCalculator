@@ -5,7 +5,7 @@
 
 const COORDINATOR_MAX_WORKERS=8;
 const COORDINATOR_URL='./sim-coordinator.js?v=35';
-const DIRECT_CHILD_URL='./sim-child.js?v=35';
+const DIRECT_CHILD_URL='./sim-child-exp.js?v=35';
 
 function COORDINATOR_runTeam(payload,onProgress){
   return new Promise((resolve,reject)=>{
