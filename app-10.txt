@@ -1,9 +1,11 @@
-// Live Infinite Dungeon simulation progress.
-// This patch changes only scheduling/UI reporting. Combat, abilities, Fabled logic,
-// On Entry/On Death caps, floor stats, RNG and result math continue to use the same engine.
+// Live Infinite Dungeon simulation progress + 8-way parallel worker pool.
+// Combat, abilities, Fabled logic, On Entry/On Death caps, floor stats, RNG and
+// result math are still provided by the exact same engine loaded by the main page.
 
 state.progress=null;
 
+const PROGRESS_WORKERS=8;
+const PROGRESS_WORKER_URL='./sim-worker.js?v=1';
 const PROGRESS_YIELD_MS=32;
 const PROGRESS_sleep=()=>new Promise(resolve=>setTimeout(resolve,0));
 
@@ -14,16 +16,6 @@ function PROGRESS_teamSnapshot(t){
   };
 }
 
-function PROGRESS_makeEnemy(floor,r,pool){
-  const s=infiniteStats(floor);
-  return Array.from({length:4},(_,i)=>fighter(pick(r,pool),flags(),'e',i,s));
-}
-
-function PROGRESS_replayFloor(t,seed,floor,pool){
-  const r=rng32(floorSeed(seed,floor)),pt=makePlayer(t),et=PROGRESS_makeEnemy(floor,r,pool);
-  return replayBattle(pt,et,r,AUTO_CORRUPTED_ABILITY,floor);
-}
-
 function PROGRESS_percent(p){
   if(!p||!p.totalWork)return 0;
   return Math.max(0,Math.min(100,(p.completed/p.totalWork)*100));
@@ -32,10 +24,13 @@ function PROGRESS_percent(p){
 function PROGRESS_markup(p){
   const pct=PROGRESS_percent(p),floor=Math.max(1,Math.floor(Number(p.floor)||1));
   return`<div class="sim-progress" data-sim-progress aria-live="polite">
-    <div class="sim-progress-head"><span>SIMULATING</span><b data-progress-team-name>Team ${p.teamIndex+1}</b></div>
+    <div class="sim-progress-head">
+      <span>SIMULATING</span>
+      <b data-progress-team-name>Team ${p.teamIndex+1} · ${p.workerCount} parallel workers</b>
+    </div>
     <div class="sim-progress-values">
       <div><small>CURRENT FLOOR</small><strong data-progress-floor>${floor.toLocaleString()}</strong></div>
-      <div><small>RUN</small><strong data-progress-run>${p.run} / ${p.totalRuns}</strong></div>
+      <div><small>RUNS DONE</small><strong data-progress-run>${p.teamCompleted} / ${p.totalRuns}</strong></div>
     </div>
     <div class="sim-progress-track" aria-hidden="true"><i data-progress-fill style="width:${pct.toFixed(2)}%"></i></div>
     <div class="sim-progress-foot"><span data-progress-team>Team ${p.teamPosition} of ${p.teamTotal}</span><span data-progress-pct>${Math.floor(pct)}% complete</span></div>
@@ -48,14 +43,23 @@ function PROGRESS_updateDom(){
   const pct=PROGRESS_percent(p),floor=Math.max(1,Math.floor(Number(p.floor)||1));
   const floorEl=box.querySelector('[data-progress-floor]'),runEl=box.querySelector('[data-progress-run]'),teamName=box.querySelector('[data-progress-team-name]'),teamEl=box.querySelector('[data-progress-team]'),pctEl=box.querySelector('[data-progress-pct]'),fill=box.querySelector('[data-progress-fill]');
   if(floorEl)floorEl.textContent=floor.toLocaleString();
-  if(runEl)runEl.textContent=`${p.run} / ${p.totalRuns}`;
-  if(teamName)teamName.textContent=`Team ${p.teamIndex+1}`;
+  if(runEl)runEl.textContent=`${p.teamCompleted} / ${p.totalRuns}`;
+  if(teamName)teamName.textContent=`Team ${p.teamIndex+1} · ${p.workerCount} parallel workers`;
   if(teamEl)teamEl.textContent=`Team ${p.teamPosition} of ${p.teamTotal}`;
   if(pctEl)pctEl.textContent=`${Math.floor(pct)}% complete`;
   if(fill)fill.style.width=`${pct.toFixed(2)}%`;
 }
 
-async function PROGRESS_simulate(t,enemyPool,seed){
+// Main-thread fallback used only if Web Workers are unavailable or fail to boot.
+function PROGRESS_makeEnemy(floor,r,pool){
+  const s=infiniteStats(floor);
+  return Array.from({length:4},(_,i)=>fighter(pick(r,pool),flags(),'e',i,s));
+}
+function PROGRESS_replayFloor(t,seed,floor,pool){
+  const r=rng32(floorSeed(seed,floor)),pt=makePlayer(t),et=PROGRESS_makeEnemy(floor,r,pool);
+  return replayBattle(pt,et,r,AUTO_CORRUPTED_ABILITY,floor);
+}
+async function PROGRESS_simulateFallback(t,enemyPool,seed){
   const start=state.start,cap=state.cap;
   let cleared=start-1,actions=0,changes=0,last=[],death=cap,debug=null,lastYield=Date.now();
   for(let floor=start;floor<=cap;floor++){
@@ -82,6 +86,100 @@ async function PROGRESS_simulate(t,enemyPool,seed){
   return{seed,cleared,actions,changes,last,death:cap+1,enemy:infiniteStats(cap),seconds:runSeconds({actions,changes}),debug};
 }
 
+function PROGRESS_createWorkers(count){
+  if(typeof Worker!=='function')return[];
+  const out=[];
+  try{
+    for(let i=0;i<count;i++)out.push(new Worker(PROGRESS_WORKER_URL));
+    return out;
+  }catch(err){
+    out.forEach(w=>{try{w.terminate()}catch(_){}});
+    console.warn('Cardborn parallel workers unavailable; using fallback.',err);
+    return[];
+  }
+}
+
+function PROGRESS_runTeamWorkers(workers,{ti,teamPosition,teamTotal,snapshot,bans,start,cap,speed,base,runsPerTeam}){
+  return new Promise((resolve,reject)=>{
+    const results=new Array(runsPerTeam),floors=new Map();
+    let nextRun=0,finished=0,settled=false;
+
+    const cleanupHandlers=()=>workers.forEach(w=>{w.onmessage=null;w.onerror=null});
+    const fail=err=>{
+      if(settled)return;
+      settled=true;cleanupHandlers();reject(err instanceof Error?err:new Error(String(err)));
+    };
+    const done=()=>{
+      if(settled)return;
+      settled=true;cleanupHandlers();resolve(results);
+    };
+    const updateFloor=()=>{
+      if(!state.progress||!floors.size)return;
+      // Use the most recently reported live floor. It may reset when a worker starts its next run,
+      // which correctly reflects that eight independent runs are moving at the same time.
+      const vals=[...floors.values()];
+      state.progress.floor=vals[vals.length-1]||state.start;
+      PROGRESS_updateDom();
+    };
+    const dispatch=(w,workerIndex)=>{
+      if(nextRun>=runsPerTeam){floors.delete(workerIndex);return}
+      const runIndex=nextRun++,seed=(base+ti*0x9e3779b9+runIndex*2654435761)>>>0,jobId=`${ti}:${runIndex}:${seed}`;
+      w.__cardbornJob={runIndex,jobId,workerIndex};
+      floors.set(workerIndex,start);
+      updateFloor();
+      w.postMessage({type:'run',jobId,team:snapshot,bans,start,cap,speed,seed});
+    };
+
+    workers.forEach((w,workerIndex)=>{
+      w.onerror=e=>fail(e?.error||e?.message||'Parallel worker error');
+      w.onmessage=e=>{
+        const msg=e.data||{};
+        if(msg.type==='ready')return;
+        if(msg.type==='boot-error'||msg.type==='error'){fail(msg.error||'Parallel worker error');return}
+        const job=w.__cardbornJob;
+        if(!job||msg.jobId!==job.jobId)return;
+        if(msg.type==='progress'){
+          floors.delete(workerIndex);floors.set(workerIndex,Math.max(1,Math.floor(Number(msg.floor)||start)));
+          updateFloor();
+          return;
+        }
+        if(msg.type==='result'){
+          results[job.runIndex]=msg.result;
+          finished++;
+          if(state.progress){
+            state.progress.completed++;
+            state.progress.teamCompleted=finished;
+            const endFloor=msg.result?.death<=cap?msg.result.death:msg.result?.cleared;
+            floors.delete(workerIndex);floors.set(workerIndex,Math.max(1,Math.floor(Number(endFloor)||start)));
+            updateFloor();
+          }
+          if(finished>=runsPerTeam){done();return}
+          dispatch(w,workerIndex);
+        }
+      };
+      dispatch(w,workerIndex);
+    });
+  });
+}
+
+async function PROGRESS_runFallback(valid,snapshots,base,runsPerTeam){
+  const enemyPool=POOL.filter(c=>!state.bans.includes(c.name));
+  state.progress.completed=0;
+  for(let teamPos=0;teamPos<valid.length;teamPos++){
+    const ti=valid[teamPos],a=[],snapshot=snapshots.get(ti);
+    Object.assign(state.progress,{teamIndex:ti,teamPosition:teamPos+1,teamTotal:valid.length,teamCompleted:0,totalRuns:runsPerTeam,workerCount:1,floor:state.start});
+    PROGRESS_updateDom();
+    for(let i=0;i<runsPerTeam;i++){
+      a.push(await PROGRESS_simulateFallback(snapshot,enemyPool,(base+ti*0x9e3779b9+i*2654435761)>>>0));
+      state.progress.completed++;
+      state.progress.teamCompleted=i+1;
+      PROGRESS_updateDom();
+      await PROGRESS_sleep();
+    }
+    state.teams[ti].result=summarize(a);
+  }
+}
+
 run=async function(indices){
   if(state.running)return;
   const valid=[...new Set((indices||[]).filter(i=>i>=0&&i<state.teams.length&&ready(state.teams[i])))];
@@ -89,32 +187,37 @@ run=async function(indices){
 
   const runsPerTeam=state.runs,base=Date.now()>>>0,totalWork=valid.length*runsPerTeam;
   const snapshots=new Map(valid.map(i=>[i,PROGRESS_teamSnapshot(state.teams[i])]));
-  const enemyPool=POOL.filter(c=>!state.bans.includes(c.name));
+  const workerCount=Math.min(PROGRESS_WORKERS,runsPerTeam);
+  const workers=PROGRESS_createWorkers(workerCount);
 
   state.running=true;
   state.pAbilities=true;
   state.eAbilities=true;
-  state.progress={teamIndex:valid[0],teamPosition:1,teamTotal:valid.length,run:1,totalRuns:runsPerTeam,floor:state.start,completed:0,totalWork};
+  state.progress={teamIndex:valid[0],teamPosition:1,teamTotal:valid.length,teamCompleted:0,totalRuns:runsPerTeam,workerCount:workers.length||1,floor:state.start,completed:0,totalWork};
   render();
   await PROGRESS_sleep();
 
   try{
-    for(let teamPos=0;teamPos<valid.length;teamPos++){
-      const ti=valid[teamPos],a=[],snapshot=snapshots.get(ti);
-      for(let i=0;i<runsPerTeam;i++){
-        Object.assign(state.progress,{teamIndex:ti,teamPosition:teamPos+1,run:i+1,floor:state.start});
+    if(!workers.length){
+      await PROGRESS_runFallback(valid,snapshots,base,runsPerTeam);
+    }else{
+      for(let teamPos=0;teamPos<valid.length;teamPos++){
+        const ti=valid[teamPos],snapshot=snapshots.get(ti);
+        Object.assign(state.progress,{teamIndex:ti,teamPosition:teamPos+1,teamTotal:valid.length,teamCompleted:0,totalRuns:runsPerTeam,workerCount:workers.length,floor:state.start});
         PROGRESS_updateDom();
-        await PROGRESS_sleep();
-        a.push(await PROGRESS_simulate(snapshot,enemyPool,(base+ti*0x9e3779b9+i*2654435761)>>>0));
-        state.progress.completed++;
-        PROGRESS_updateDom();
+        const results=await PROGRESS_runTeamWorkers(workers,{ti,teamPosition:teamPos+1,teamTotal:valid.length,snapshot,bans:[...state.bans],start:state.start,cap:state.cap,speed:state.speed,base,runsPerTeam});
+        state.teams[ti].result=summarize(results);
         await PROGRESS_sleep();
       }
-      state.teams[ti].result=summarize(a);
     }
   }catch(err){
-    console.error('Cardborn simulation failed',err);
+    console.warn('Cardborn parallel simulation failed; retrying on main thread.',err);
+    workers.forEach(w=>{try{w.terminate()}catch(_){}});
+    state.progress.completed=0;
+    valid.forEach(i=>state.teams[i].result=null);
+    await PROGRESS_runFallback(valid,snapshots,base,runsPerTeam);
   }finally{
+    workers.forEach(w=>{try{w.terminate()}catch(_){}});
     state.running=false;
     state.progress=null;
     save();
@@ -138,18 +241,19 @@ render=function(){
 
 const PROGRESS_style=document.createElement('style');
 PROGRESS_style.textContent=`
-.sim-progress{width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid var(--accent);border-radius:14px;background:var(--surface-2);color:var(--text-main)}
+.simulation-running .sim-actions{display:block!important;width:100%!important;grid-template-columns:none!important}
+.sim-progress{display:block;width:100%!important;max-width:none!important;box-sizing:border-box;padding:15px 16px;border:1px solid var(--accent);border-radius:14px;background:var(--surface-2);color:var(--text-main)}
 .sim-progress-head,.sim-progress-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .sim-progress-head span,.sim-progress-values small{font-size:10px;letter-spacing:.11em;font-weight:800;color:var(--accent)}
-.sim-progress-head b{font-size:12px}
-.sim-progress-values{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:11px 0 10px}
+.sim-progress-head b{font-size:12px;text-align:right}
+.sim-progress-values{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:13px 0 11px}
 .sim-progress-values>div{min-width:0}
-.sim-progress-values small{display:block;margin-bottom:2px;color:var(--muted,var(--text-main));opacity:.72}
-.sim-progress-values strong{display:block;font-size:20px;line-height:1.1;letter-spacing:-.02em}
-.sim-progress-track{height:6px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.08)}
-.sim-progress-track i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .14s linear}
-.sim-progress-foot{margin-top:7px;font-size:10px;color:var(--muted,var(--text-main));opacity:.78}
+.sim-progress-values small{display:block;margin-bottom:3px;color:var(--muted,var(--text-main));opacity:.72}
+.sim-progress-values strong{display:block;font-size:23px;line-height:1.05;letter-spacing:-.025em}
+.sim-progress-track{width:100%;height:7px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.08)}
+.sim-progress-track i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .12s linear}
+.sim-progress-foot{margin-top:8px;font-size:10px;color:var(--muted,var(--text-main));opacity:.78}
 .simulation-running .team-tabs button,.simulation-running .team-row,.simulation-running .library button,.simulation-running .simulation input,.simulation-running .simulation select,.simulation-running .simulation .run-options button,.simulation-running .depth-ban-box button,.simulation-running [data-border]{pointer-events:none}
-@media(max-width:560px){.sim-progress-values strong{font-size:18px}}
+@media(max-width:560px){.sim-progress{padding:13px}.sim-progress-head{align-items:flex-start}.sim-progress-head b{font-size:10px}.sim-progress-values{gap:12px}.sim-progress-values strong{font-size:19px}}
 `;
 document.head.appendChild(PROGRESS_style);
