@@ -1,0 +1,27 @@
+// Multi-hit targeting correctness.
+// The full battle loop already retargets FULL_active(foes) before every queued hit,
+// so remaining attacks continue into the next living card after a kill.
+// This patch only fixes Triple Petal Slash's Fabled finisher: the 4th hit gets
+// 150% damage + defense ignore only when all four strikes stayed on one target.
+
+const MULTI_basePrepareHit=FULL_prepareHit;
+FULL_prepareHit=function(actor,target,foes,r,ctx,hitNo,totalHits,baseMult){
+  const isTriple=actor?.ability?.name==='Triple Petal Slash'&&FULL_fab(actor)&&totalHits===4;
+  if(isTriple){
+    if(hitNo===0){
+      actor._tripleSequenceTarget=target;
+      actor._tripleSequenceSame=true;
+    }else if(actor._tripleSequenceTarget!==target){
+      actor._tripleSequenceSame=false;
+    }
+  }
+
+  const out=MULTI_basePrepareHit(actor,target,foes,r,ctx,hitNo,totalHits,baseMult);
+
+  if(isTriple&&hitNo===3&&!actor._tripleSequenceSame){
+    out.mult=baseMult;
+    out.ignore=false;
+    if(out.meta)out.meta.tripleFinal=false;
+  }
+  return out;
+};
