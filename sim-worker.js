@@ -16,7 +16,7 @@ self.document={
 };
 self.localStorage={getItem:()=>null,setItem:noop,removeItem:noop};
 
-const ENGINE_VERSION='23';
+const ENGINE_VERSION='24';
 const DATA_FILES=['cards-1.js','cards-2.js','cards-3.js','cards-4.js','cards-5.js','meta.js'];
 const ENGINE_FILES=['app-1.txt','app-2.txt','app-3.txt','app-5.txt','app-fabled-source.txt','app-7a.txt','app-7b.txt','app-7c.txt','app-7d.txt','app-7e.txt','app-fabled-restore.txt','app-8.txt','app-9.txt','app-11.txt'];
 
