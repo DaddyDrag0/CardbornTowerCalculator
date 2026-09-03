@@ -1,0 +1,62 @@
+// Interaction correctness fixes.
+// 1) Titan's Kindness is a support effect: when no ally has died, Titanic Beast
+//    skips its attack and buffs the OTHER living cards on its team. It must not
+//    buff itself, otherwise its HP grows exponentially and can create an artificial
+//    permanent stalemate.
+// 2) Battle debug should not attribute one combined team-start snapshot to every
+//    card on the team. Collapse it to one neutral Battle Start event instead.
+// 3) Corrupted on-entry stat changes should be labeled as including the Corrupted
+//    effect instead of pretending the visible card ability caused every change.
+
+const INTERACTION_baseTurnStart=turnStart;
+turnStart=function(f,t,own,foes,r,ctx){
+  const titanSupport=!!(f&&f.ability?.name==='Titan’s Kindness'&&FULL_enabled(f,ctx)&&!f._titanHadDeath);
+  if(!titanSupport)return INTERACTION_baseTurnStart(f,t,own,foes,r,ctx);
+
+  const INTERACTION_originalBuff=buff;
+  const titanPct=FULL_fab(f)?.15:.10;
+  buff=function(target,amount){
+    if(target===f&&Math.abs(Number(amount)-titanPct)<1e-9)return;
+    return INTERACTION_originalBuff(target,amount);
+  };
+  try{return INTERACTION_baseTurnStart(f,t,own,foes,r,ctx)}
+  finally{buff=INTERACTION_originalBuff}
+};
+
+const INTERACTION_baseLogAbility=FULL_logAbility;
+const INTERACTION_loggedBattleStarts=new WeakSet();
+FULL_logAbility=function(events,turn,f,phase,before,pt,et,extra=[]){
+  if(phase==='Battle start'&&before&&typeof before==='object'&&events){
+    if(INTERACTION_loggedBattleStarts.has(before))return;
+    INTERACTION_loggedBattleStarts.add(before);
+    let diff=[];
+    try{if(typeof battleDiff==='function')diff=battleDiff(before,pt,et)}catch(_){}
+    if(!diff.length&&!extra.length)return;
+    const bits=[...extra,...diff];
+    events.push({
+      turn,
+      type:'ability',
+      team:FULL_teamName(f),
+      card:'Battle Start',
+      detail:`Team effects · Battle start${bits.length?' · '+bits.join(' · '):''}`
+    });
+    return;
+  }
+
+  if(phase==='On entry'&&f?.flags?.corrupted&&events&&before){
+    let diff=[];
+    try{if(typeof battleDiff==='function')diff=battleDiff(before,pt,et)}catch(_){}
+    if(!diff.length&&!extra.length)return;
+    const bits=[...extra,...diff];
+    events.push({
+      turn,
+      type:'ability',
+      team:FULL_teamName(f),
+      card:f.card?.name||'Unknown',
+      detail:`${f.ability?.name||'Ability'} + Corrupted effect · On entry${bits.length?' · '+bits.join(' · '):''}`
+    });
+    return;
+  }
+
+  return INTERACTION_baseLogAbility(events,turn,f,phase,before,pt,et,extra);
+};
