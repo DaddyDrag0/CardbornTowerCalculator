@@ -9,4 +9,14 @@ PATCH_totalRunSeconds=function(run){
 };
 
 // Production coverage marker used only for sanity checking; it is not rendered in the UI.
-window.CARDBORN_ENGINE_STATUS={normalAbilities:137,fabledUpgrades:125,floorCap:50000,floorOverheadSeconds:2.5};
+// Report the real post-load audit instead of hardcoded numbers so broken coverage cannot look healthy.
+window.CARDBORN_ENGINE_STATUS={
+  normalAbilities:window.CARDBORN_ABILITY_AUDIT?.uniqueAbilities??0,
+  fabledUpgrades:window.CARDBORN_ABILITY_AUDIT?.fabled??0,
+  abilityAuditOk:window.CARDBORN_ABILITY_AUDIT?.ok===true,
+  normalMissing:window.CARDBORN_ABILITY_AUDIT?.missing||[],
+  fabledMissing:window.CARDBORN_ABILITY_AUDIT?.fabledMissing||[],
+  fabledMissingHandlers:window.CARDBORN_ABILITY_AUDIT?.fabledMissingHandlers||[],
+  floorCap:50000,
+  floorOverheadSeconds:2.5
+};
