@@ -5,7 +5,7 @@
 state.progress=null;
 
 const PROGRESS_WORKERS=8;
-const PROGRESS_WORKER_URL='./sim-worker.js?v=1';
+const PROGRESS_WORKER_URL='./sim-worker.js?v=23';
 const PROGRESS_YIELD_MS=32;
 const PROGRESS_sleep=()=>new Promise(resolve=>setTimeout(resolve,0));
 
