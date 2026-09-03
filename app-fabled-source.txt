@@ -1,3 +1,7 @@
-// Preserve the authoritative FabledAbilityText extraction before the full combat engine loads.
-// A Fabled border always keeps its stat multiplier, but only entries in this table have an upgraded ability.
+// Save the bootstrap Fabled table from meta.js before the full combat engine expands it.
+// The authoritative 125-entry Fabled table is added by app-7a/app-7b and must survive final load.
+// Normalize legacy escaped apostrophes before FULL_ALL_ABILITIES/FULL_HANDLED are compared.
+for(const c of CARDS){
+  if(c?.ability?.name?.includes("\\'"))c.ability.name=c.ability.name.replace(/\\'/g,"'");
+}
 const EXTRACTED_FABLED=Object.freeze({...FABLED});
