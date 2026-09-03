@@ -5,8 +5,11 @@
 //    permanent stalemate.
 // 2) Battle debug should not attribute one combined team-start snapshot to every
 //    card on the team. Collapse it to one neutral Battle Start event instead.
-// 3) Corrupted on-entry stat changes should be labeled as including the Corrupted
-//    effect instead of pretending the visible card ability caused every change.
+// 3) Corrupted on-entry stat changes are labeled separately from the visible ability.
+// 4) Haunting Presence start-of-turn healing is logged as its own passive aura,
+//    instead of being folded into the active card's Turn effect.
+// 5) Generic incoming-damage changes are logged as Defense modifiers rather than
+//    falsely attributing them to the defender's visible ability.
 
 const INTERACTION_baseTurnStart=turnStart;
 turnStart=function(f,t,own,foes,r,ctx){
@@ -21,6 +24,35 @@ turnStart=function(f,t,own,foes,r,ctx){
   };
   try{return INTERACTION_baseTurnStart(f,t,own,foes,r,ctx)}
   finally{buff=INTERACTION_originalBuff}
+};
+
+let INTERACTION_debugActive=false;
+let INTERACTION_pendingTurnAura=null;
+const INTERACTION_baseBattle=battle;
+battle=function(pt,et,r,cid,debug=false){
+  const previousDebug=INTERACTION_debugActive;
+  INTERACTION_debugActive=!!debug;
+  INTERACTION_pendingTurnAura=null;
+  try{return INTERACTION_baseBattle(pt,et,r,cid,debug)}
+  finally{
+    INTERACTION_debugActive=previousDebug;
+    INTERACTION_pendingTurnAura=null;
+  }
+};
+
+const INTERACTION_baseSpecterAuras=FULL_specterAuras;
+FULL_specterAuras=function(teams){
+  if(!INTERACTION_debugActive||!FULL_CONTEXT?.all)return INTERACTION_baseSpecterAuras(teams);
+  const specters=(teams||[]).flatMap(team=>FULL_alive(team).filter(x=>FULL_enabled(x,FULL_CONTEXT)&&x.ability?.name==='Haunting Presence'));
+  if(!specters.length)return INTERACTION_baseSpecterAuras(teams);
+
+  const [pt,et]=FULL_CONTEXT.all,before=FULL_snapshot(pt,et);
+  const out=INTERACTION_baseSpecterAuras(teams);
+  const after=FULL_snapshot(pt,et);
+  let diff=[];
+  try{if(typeof battleDiff==='function')diff=battleDiff(before,pt,et)}catch(_){}
+  if(diff.length)INTERACTION_pendingTurnAura={after,diff,specters};
+  return out;
 };
 
 const INTERACTION_baseLogAbility=FULL_logAbility;
@@ -58,7 +90,47 @@ FULL_logAbility=function(events,turn,f,phase,before,pt,et,extra=[]){
     return;
   }
 
-  return INTERACTION_baseLogAbility(events,turn,f,phase,before,pt,et,extra);
+  if(phase==='Defense interaction'&&events&&before){
+    let diff=[];
+    try{if(typeof battleDiff==='function')diff=battleDiff(before,pt,et)}catch(_){}
+    const bits=[...extra,...diff];
+    if(!bits.length)return;
+    events.push({
+      turn,
+      type:'ability',
+      team:FULL_teamName(f),
+      card:f.card?.name||'Unknown',
+      detail:`Defense modifiers · Defense interaction · ${bits.join(' · ')}`
+    });
+    return;
+  }
+
+  if(phase==='Turn effect'&&events&&INTERACTION_pendingTurnAura){
+    const aura=INTERACTION_pendingTurnAura;
+    INTERACTION_pendingTurnAura=null;
+    const teamNames=[...new Set(aura.specters.map(FULL_teamName))];
+    const sourceNames=[...new Set(aura.specters.map(x=>x.card?.name||'Specter'))];
+    events.push({
+      turn,
+      type:'ability',
+      team:teamNames.length===1?teamNames[0]:'System',
+      card:'Haunting Presence',
+      detail:`${sourceNames.join(' + ')} passive aura · Start of turn · ${aura.diff.join(' · ')}`
+    });
+    before=aura.after;
+  }
+
+  let nextExtra=extra;
+  if(phase==='Turn effect'&&f?.ability?.name==='Titan’s Kindness'&&!f._titanHadDeath&&!f._interactionTitanStallHint){
+    const own=FULL_team(f,FULL_CONTEXT);
+    const specter=FULL_alive(own).find(x=>x!==f&&FULL_enabled(x,FULL_CONTEXT)&&x.ability?.name==='Haunting Presence');
+    if(specter){
+      f._interactionTitanStallHint=true;
+      nextExtra=[...extra,'support mode: no attacks; Haunting Presence heals the frontline each turn'];
+    }
+  }
+
+  return INTERACTION_baseLogAbility(events,turn,f,phase,before,pt,et,nextExtra);
 };
 
 // Force a fresh worker URL for this engine revision even if the previous worker
@@ -67,7 +139,7 @@ PROGRESS_createWorkers=function(count){
   if(typeof Worker!=='function')return[];
   const out=[];
   try{
-    for(let i=0;i<count;i++)out.push(new Worker('./sim-worker.js?v=26'));
+    for(let i=0;i<count;i++)out.push(new Worker('./sim-worker.js?v=27'));
     return out;
   }catch(err){
     out.forEach(w=>{try{w.terminate()}catch(_){}});
