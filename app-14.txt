@@ -1,0 +1,66 @@
+// Experimental ban expansion: normal mode = 3 bans, Experimental = 10 bans.
+const EXPERIMENTAL_BANS_KEY='cardborn-experimental-bans-v1';
+state.experimentalBans=false;
+try{state.experimentalBans=localStorage.getItem(EXPERIMENTAL_BANS_KEY)==='1'}catch(_){}
+
+const EXPERIMENTAL_baseLoad=load;
+load=function(){
+  EXPERIMENTAL_baseLoad();
+  try{state.experimentalBans=localStorage.getItem(EXPERIMENTAL_BANS_KEY)==='1'}catch(_){state.experimentalBans=false}
+  if(state.experimentalBans){
+    try{const saved=JSON.parse(localStorage.getItem(STORE)||'null');state.bans=(saved?.bans||state.bans||[]).filter(n=>BY.has(n)&&!BY.get(n).isSecret).slice(0,10)}
+    catch(_){state.bans=(state.bans||[]).slice(0,10)}
+  }else state.bans=(state.bans||[]).slice(0,3);
+};
+
+const EXPERIMENTAL_baseSave=save;
+save=function(){
+  if(!state.experimentalBans&&state.bans.length>3)state.bans=state.bans.slice(0,3);
+  EXPERIMENTAL_baseSave();
+  try{localStorage.setItem(EXPERIMENTAL_BANS_KEY,state.experimentalBans?'1':'0')}catch(_){}
+};
+
+const EXPERIMENTAL_limit=()=>state.experimentalBans?10:3;
+const EXPERIMENTAL_invalidate=()=>state.teams.forEach(t=>t.result=null);
+
+function EXPERIMENTAL_decorateBans(){
+  const box=root.querySelector('.depth-ban-box');if(!box)return;
+  const head=box.querySelector('.depth-ban-head'),right=head?.querySelector('div'),limit=EXPERIMENTAL_limit(),count=state.bans.length;
+  if(head?.querySelector('span'))head.querySelector('span').textContent='Infinite Tower bans';
+  if(right){
+    let toggle=right.querySelector('[data-experimental-bans]');
+    if(!toggle){toggle=document.createElement('button');toggle.type='button';toggle.dataset.experimentalBans='';toggle.className='experimental-ban-toggle';right.insertBefore(toggle,right.firstChild)}
+    toggle.classList.toggle('on',!!state.experimentalBans);
+    toggle.textContent=state.experimentalBans?'Experimental ON':'Experimental';
+    toggle.title='Experimental testing only: increases the enemy ban cap from 3 to 10.';
+    const counter=right.querySelector('b');if(counter)counter.textContent=`${count}/${limit}`;
+  }
+  const help=box.querySelector(':scope > small');
+  if(help)help.textContent=state.experimentalBans?'Experimental testing: remove up to ten non-secret cards from the enemy pool.':'Remove up to three non-secret cards from the enemy pool.';
+  const search=box.querySelector('#bsearch');
+  if(search){search.disabled=count>=limit;search.placeholder=count>=limit?`${limit}/${limit} bans selected`:'Search card to ban…'}
+  if(state.experimentalBans){
+    box.querySelector('.depth-ban-suggestions')?.remove();
+    const bq=norm(state.banQuery),wrap=box.querySelector('.depth-ban-search');
+    if(wrap&&bq&&count<limit){
+      const suggest=POOL.filter(c=>!state.bans.includes(c.name)&&norm(c.name).includes(bq)).slice(0,8),list=document.createElement('div');
+      list.className='depth-ban-suggestions';
+      list.innerHTML=suggest.length?suggest.map(c=>`<button data-ba="${esc(c.name)}"><span>${esc(c.name)}</span><small>${esc(c.ability?.name||'No ability')}</small></button>`).join(''):'<small>No matching cards.</small>';
+      wrap.appendChild(list);
+    }
+  }
+}
+
+const EXPERIMENTAL_baseRender=render;
+render=function(){EXPERIMENTAL_baseRender();EXPERIMENTAL_decorateBans()};
+
+root.addEventListener('click',e=>{
+  const toggle=e.target.closest('[data-experimental-bans]');
+  if(toggle){e.preventDefault();e.stopImmediatePropagation();state.experimentalBans=!state.experimentalBans;if(!state.experimentalBans&&state.bans.length>3)state.bans=state.bans.slice(0,3);EXPERIMENTAL_invalidate();save();render();return}
+  const add=e.target.closest('[data-ba]');
+  if(add&&state.experimentalBans){e.preventDefault();e.stopImmediatePropagation();const name=add.dataset.ba;if(state.bans.length<10&&BY.has(name)&&!BY.get(name).isSecret&&!state.bans.includes(name))state.bans.push(name);state.banQuery='';EXPERIMENTAL_invalidate();save();render()}
+},true);
+
+const EXPERIMENTAL_style=document.createElement('style');
+EXPERIMENTAL_style.textContent=`.depth-ban-head>div{display:flex;align-items:center;gap:6px}.experimental-ban-toggle{border:1px solid #536175;background:var(--surface-2);color:#8f9dae;border-radius:999px;padding:4px 8px;font-size:8px;font-weight:800;white-space:nowrap}.experimental-ban-toggle:hover{border-color:var(--accent-line);color:var(--accent-text)}.experimental-ban-toggle.on{border-color:#9a6ac7;background:rgba(154,106,199,.16);color:#dfc7f4}@media(max-width:560px){.depth-ban-head{align-items:flex-start;gap:8px}.depth-ban-head>div{flex-wrap:wrap;justify-content:flex-end}.experimental-ban-toggle{min-height:32px;padding:6px 9px}}`;
+document.head.appendChild(EXPERIMENTAL_style);
