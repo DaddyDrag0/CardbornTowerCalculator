@@ -1,17 +1,83 @@
-// Parallel-worker stability patch.
-// Bulk simulation uses the lightweight sim-worker directly. The worker skips battle
-// debug replay during the run, so a long/stalled battle cannot collapse the 8-way
-// pool into the one-thread fallback.
+// Depth-calculator worker architecture for Infinite Tower.
+// The page launches one coordinator. The coordinator owns 8 child workers and
+// continuously feeds each child one run at a time, matching the proven Depth setup.
 
-PROGRESS_createWorkers=function(count){
-  if(typeof Worker!=='function')return[];
-  const out=[];
+const COORDINATOR_MAX_WORKERS=8;
+const COORDINATOR_URL='./sim-coordinator.js?v=1';
+
+function COORDINATOR_runTeam(payload,onProgress){
+  return new Promise((resolve,reject)=>{
+    if(typeof Worker!=='function'){reject(new Error('Web Workers are unavailable in this browser.'));return}
+    let settled=false;
+    const worker=new Worker(COORDINATOR_URL);
+    const cleanup=()=>{try{worker.terminate()}catch(_){}};
+    worker.onerror=e=>{
+      if(settled)return;settled=true;cleanup();
+      reject(e?.error||new Error(e?.message||'Infinite Tower coordinator failed'));
+    };
+    worker.onmessage=e=>{
+      const msg=e.data||{};
+      if(msg.type==='progress'){onProgress?.(msg);return}
+      if(msg.type==='error'){
+        if(settled)return;settled=true;cleanup();reject(new Error(msg.error||'Infinite Tower coordinator failed'));return;
+      }
+      if(msg.type==='result'){
+        if(settled)return;settled=true;cleanup();resolve(msg.results||[]);
+      }
+    };
+    worker.postMessage({type:'batch',...payload});
+  });
+}
+
+run=async function(indices){
+  if(state.running)return;
+  const valid=[...new Set((indices||[]).filter(i=>i>=0&&i<state.teams.length&&ready(state.teams[i])))];
+  if(!valid.length)return;
+
+  const runsPerTeam=Math.max(1,Math.floor(Number(state.runs)||1));
+  const workerCount=Math.min(COORDINATOR_MAX_WORKERS,runsPerTeam);
+  const base=Date.now()>>>0,totalWork=valid.length*runsPerTeam;
+  const snapshots=new Map(valid.map(i=>[i,PROGRESS_teamSnapshot(state.teams[i])]));
+
+  state.running=true;
+  state.pAbilities=true;
+  state.eAbilities=true;
+  state.progress={teamIndex:valid[0],teamPosition:1,teamTotal:valid.length,teamCompleted:0,totalRuns:runsPerTeam,workerCount,floor:state.start,completed:0,totalWork};
+  render();
+  await PROGRESS_sleep();
+
   try{
-    for(let i=0;i<count;i++)out.push(new Worker('./sim-worker.js?v=30'));
-    return out;
+    for(let teamPos=0;teamPos<valid.length;teamPos++){
+      const ti=valid[teamPos],snapshot=snapshots.get(ti);
+      Object.assign(state.progress,{teamIndex:ti,teamPosition:teamPos+1,teamTotal:valid.length,teamCompleted:0,totalRuns:runsPerTeam,workerCount,floor:state.start,completed:teamPos*runsPerTeam});
+      PROGRESS_updateDom();
+
+      const results=await COORDINATOR_runTeam({
+        teamIndex:ti,team:snapshot,bans:[...state.bans],start:state.start,cap:state.cap,
+        speed:state.speed,base,runs:runsPerTeam
+      },msg=>{
+        if(!state.progress)return;
+        state.progress.teamCompleted=Math.max(0,Math.min(runsPerTeam,Number(msg.completed)||0));
+        state.progress.completed=teamPos*runsPerTeam+state.progress.teamCompleted;
+        state.progress.workerCount=Number(msg.workerCount)||workerCount;
+        state.progress.floor=Math.max(1,Math.floor(Number(msg.maxActiveFloor??msg.floor)||state.start));
+        PROGRESS_updateDom();
+      });
+
+      if(results.length!==runsPerTeam)throw new Error(`Coordinator returned ${results.length}/${runsPerTeam} runs.`);
+      state.teams[ti].result=summarize(results);
+      state.progress.completed=(teamPos+1)*runsPerTeam;
+      state.progress.teamCompleted=runsPerTeam;
+      PROGRESS_updateDom();
+      await PROGRESS_sleep();
+    }
   }catch(err){
-    out.forEach(w=>{try{w.terminate()}catch(_){}});
-    console.warn('Cardborn parallel workers unavailable; using fallback.',err);
-    return[];
+    console.error('Infinite Tower parallel simulation failed.',err);
+    alert(`Parallel simulation failed: ${err?.message||err}`);
+  }finally{
+    state.running=false;
+    state.progress=null;
+    save();
+    render();
   }
 };
