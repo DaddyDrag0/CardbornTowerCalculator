@@ -60,3 +60,18 @@ FULL_logAbility=function(events,turn,f,phase,before,pt,et,extra=[]){
 
   return INTERACTION_baseLogAbility(events,turn,f,phase,before,pt,et,extra);
 };
+
+// Force a fresh worker URL for this engine revision even if the previous worker
+// script was cached by the browser.
+PROGRESS_createWorkers=function(count){
+  if(typeof Worker!=='function')return[];
+  const out=[];
+  try{
+    for(let i=0;i<count;i++)out.push(new Worker('./sim-worker.js?v=26'));
+    return out;
+  }catch(err){
+    out.forEach(w=>{try{w.terminate()}catch(_){}});
+    console.warn('Cardborn parallel workers unavailable; using fallback.',err);
+    return[];
+  }
+};
