@@ -1,9 +1,9 @@
 // Non-combat production calibration. The full card engine lives in app-7a..7e.
 // Timing calibrated from observed Infinite Dungeon runs:
-//   - 0.50s per attack/action at 1x battle speed
+//   - 0.55s per attack/action at 1x battle speed
 //   - 0.30s per active-card change at 1x battle speed
 //   - 0.30s fixed floor/transition overhead (not affected by battle speed)
-const TIMING_ACTION_SECONDS=0.50;
+const TIMING_ACTION_SECONDS=0.55;
 const TIMING_CHANGE_SECONDS=0.30;
 const TIMING_FLOOR_OVERHEAD_SECONDS=0.30;
 
