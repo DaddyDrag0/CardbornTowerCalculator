@@ -5,7 +5,7 @@
 state.progress=null;
 
 const PROGRESS_WORKERS=8;
-const PROGRESS_WORKER_URL='./sim-worker.js?v=23';
+const PROGRESS_WORKER_URL='./sim-worker.js?v=24';
 const PROGRESS_YIELD_MS=32;
 const PROGRESS_sleep=()=>new Promise(resolve=>setTimeout(resolve,0));
 
@@ -115,8 +115,6 @@ function PROGRESS_runTeamWorkers(workers,{ti,teamPosition,teamTotal,snapshot,ban
     };
     const updateFloor=()=>{
       if(!state.progress||!floors.size)return;
-      // Use the most recently reported live floor. It may reset when a worker starts its next run,
-      // which correctly reflects that eight independent runs are moving at the same time.
       const vals=[...floors.values()];
       state.progress.floor=vals[vals.length-1]||state.start;
       PROGRESS_updateDom();
@@ -228,10 +226,7 @@ run=async function(indices){
 const PROGRESS_baseRender=render;
 render=function(){
   PROGRESS_baseRender();
-
-  // Remove the old result-header "50 RUNS" style badge.
   root.querySelectorAll('.result-head .verified').forEach(el=>el.remove());
-
   root.classList.toggle('simulation-running',!!state.running);
   if(state.running&&state.progress){
     const actions=root.querySelector('.sim-actions');
