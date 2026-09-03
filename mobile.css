@@ -1,0 +1,116 @@
+/* Infinite Tower mobile layout and touch ergonomics */
+html{-webkit-text-size-adjust:100%}
+button,input,select,label{touch-action:manipulation}
+button,label{-webkit-tap-highlight-color:transparent}
+
+@media(max-width:900px){
+  .shell{width:min(100% - 20px,760px);padding:16px 0 24px}
+  .topbar{padding:0 2px 14px;align-items:flex-start;gap:10px}
+  .topbar h1{font-size:clamp(24px,7vw,32px)}
+  .workspace{grid-template-columns:1fr;gap:10px}
+  .panel{border-radius:15px}
+  .panel-head{padding:15px 15px 12px;gap:10px}
+  .library{max-height:520px}
+  .team-tabs{margin:0 -10px;padding:12px 10px 10px;scroll-padding:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .team-tabs::-webkit-scrollbar{display:none}
+  .team-tabs button{min-width:112px;min-height:48px;flex:0 0 auto}
+  .team-tabs .tab-action{margin-left:0;min-width:94px}
+  .result-grid{grid-template-columns:1fr}
+  .results-panel{border-radius:15px}
+}
+
+@media(max-width:600px){
+  body{min-width:0;overflow-x:hidden}
+  .shell{width:100%;padding:10px 10px 22px}
+  .topbar{padding:4px 2px 12px}
+  .topbar .kicker{font-size:9px}
+  .topbar h1{font-size:25px;line-height:1.05}
+  .theme-switch{display:none!important}
+
+  .team-tabs{margin:0 -10px;padding-left:10px;padding-right:10px;gap:6px}
+  .team-tabs button{min-width:104px;padding:9px 10px;border-radius:10px}
+
+  .panel-head{align-items:flex-start;padding:14px 13px 11px}
+  .panel-head h3{font-size:17px}
+  .panel-actions{gap:4px;justify-content:flex-end}
+  .panel-actions .text-button{min-height:36px;padding:7px 8px}
+
+  .team-list{padding:8px;gap:7px}
+  .team-row{grid-template-columns:22px 52px minmax(0,1fr);gap:9px;padding:9px;min-height:76px}
+  .portrait{width:52px;height:52px}
+  .name-line{display:block}
+  .name-line b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .name-line em{display:block;max-width:100%;margin-top:2px;font-size:9px}
+  .numbers{gap:10px;margin:5px 0 6px}
+  .numbers b{font-size:11px}
+  .border-pills{gap:4px}
+  .border-pills label{min-height:27px;padding:5px 7px;font-size:8px}
+
+  .search{width:calc(100% - 16px);margin:8px;padding:12px;font-size:16px}
+  .library{max-height:440px}
+  .library-list{padding:0 6px 8px;-webkit-overflow-scrolling:touch}
+  .library-list button{grid-template-columns:42px minmax(0,1fr) auto;gap:8px;min-height:58px;padding:8px}
+  .library-list .mini-portrait{width:42px;height:42px}
+  .library-list b{font-size:12px}
+  .library-list small{font-size:9px}
+  .library-list em{font-size:8px;max-width:72px;text-align:right}
+
+  .simulation-body{padding:12px}
+  .run-options{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .run-options button{min-height:42px;padding:9px 6px;font-size:11px}
+  .sim-grid{grid-template-columns:1fr;gap:0}
+  .sim-field input,.sim-field select{min-height:46px;font-size:16px}
+  .depth-ban-box{padding:11px}
+  .depth-ban-search input{min-height:44px;font-size:16px}
+  .depth-ban-suggestions button{min-height:42px;padding:9px}
+  .sim-actions{grid-template-columns:1fr;gap:7px}
+  .sim-actions button{min-height:48px;font-size:12px}
+
+  .sim-progress{padding:13px!important;border-radius:12px!important}
+  .sim-progress-head{align-items:flex-start!important;gap:8px!important}
+  .sim-progress-head b{font-size:10px!important;line-height:1.25}
+  .sim-progress-values{gap:8px!important;margin:11px 0 10px!important}
+  .sim-progress-values strong{font-size:20px!important}
+
+  .results-title{padding:14px 13px;align-items:flex-start;gap:8px}
+  .result-grid{padding:8px;gap:8px}
+  .result-card{padding:11px}
+  .result-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px}
+  .result-metrics div:last-child{grid-column:1 / -1}
+  .result-metrics div{padding:9px}
+  .result-metrics b{font-size:16px}
+  .floor-strip{max-height:110px}
+  .floor-strip span{min-width:37px;min-height:30px;display:inline-flex;align-items:center;justify-content:center;padding:6px 8px}
+  .enemy-chips i{padding:6px 8px}
+
+  footer{display:block;padding:15px 3px 0;line-height:1.7}
+  footer span{display:block}
+
+  .card-tooltip{display:none!important}
+
+  .battle-debug{width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important}
+  .dbg-head{padding:10px 11px!important;gap:8px!important;align-items:flex-start!important}
+  .dbg-head h3{font-size:15px!important}
+  .dbg-actions{flex-direction:row!important;gap:5px!important}
+  .dbg-actions button{min-height:36px;padding:7px 9px!important}
+  .dbg-scroll{padding:8px 8px 18px!important;-webkit-overflow-scrolling:touch}
+  .dbg-matchup{grid-template-columns:1fr!important;gap:6px!important}
+  .dbg-match-vs{padding:2px!important}
+  .dbg-fight{grid-template-columns:1fr!important;gap:5px!important;padding:8px!important}
+  .dbg-vs{transform:rotate(90deg);height:22px;display:grid;place-items:center}
+  .dbg-fighter{padding:8px!important}
+  .dbg-fighter-top{display:block!important}
+  .dbg-fighter-top span{display:block;margin-top:3px}
+  .dbg-interaction{grid-template-columns:1fr!important;gap:3px!important;padding:8px!important}
+  .dbg-interaction>span,.dbg-interaction>b,.dbg-interaction>p{font-size:8px!important}
+  .dbg-turn-head{grid-template-columns:1fr auto!important;gap:6px!important}
+  .dbg-turn-head i{display:none}
+}
+
+@media(max-width:380px){
+  .shell{padding-left:7px;padding-right:7px}
+  .team-row{grid-template-columns:18px 46px minmax(0,1fr);gap:7px;padding:7px}
+  .portrait{width:46px;height:46px}
+  .border-pills label{padding:4px 6px;font-size:7px}
+  .run-options{grid-template-columns:repeat(2,1fr)}
+}
