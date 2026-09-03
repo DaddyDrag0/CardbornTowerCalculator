@@ -1,9 +1,12 @@
 // Final Fabled integrity pass.
 // IMPORTANT: app-7a/app-7b already expanded FABLED to the full game-derived table.
 // Never delete those entries here; FULL_fab() uses this object to decide whether upgraded mechanics run.
+const EXPECTED_FABLED_NAMES=new Set(["Field Guardian","Peasant’s Bravery","Pillage","Focused Aim","Ambush","Purifying Light","Nature’s Guardian","Flame Wall","Dark Pact","Backstab","Throwing Spear","Resilience","Swarm Strike","Holy Strike","Raise Dead","Goblin Rally","Double Strike","Lich’s Curse","Scurrying Escape","Savage Fury","Tip the Guard","Inspiring Leadership","Cocooned Protection","Fatal Sting","King's Rule","Fine Print","Treasure","Arachnid Dominion","Dragon’s Roar","Blinding Dive","Reflective Coil","Tunnel Strike","Paid Security","Full Moon Transformation","Refraction","Rejection of Love","Gemstone Fortress","Taxed","Vampiric Drain","Crystal Slam","Seasoned Veteran","Arcane Mastery","Luck Incarnate","Chaotic Contraption","Elemental Fury","Dark Ritual","Eye of the Storm","The Coming of the Year","Weak Growth","Crystalline Prison","Gearjam","Stricken Terror","Amethyst Armor","Radiant Burst","Sacred Rejuvenation","Greed","Hold the Line","Void Beam","Renewal of a New Cycle","Soulpierce Arrow","Age of Beasts","Solar Ward","Frost Breath","Demonic Fury","Critical Mass","Immortal Scales","Strut & Strike","Death’s Whisper","Haunting Presence","Raging Tempest","Moment of Impact","Earth's Blessing","Winter’s Grasp","Crown of Embers","Colossal Momentum","Double or Nothing","Cursed Forge","Slip Between Shadows","Mind Fracture","Dragon Mother","Crushing Depths","Heaven's Threshold","Puppet Strings","Final Stand","Grace of the Divine","Endless Hunger","Furnace Heart","Celestial Smite","King’s Command","Rotten Pact","Nullify","Titan’s Kindness","Fate Reversal","Inverse Law","Astral Blessing","Undying Grudge","Unstoppable Force","Till Death Do Us Part","Apex Dragon","Near Perfection","Void Devastation","Event Horizon","Imperial Advance","Melodic Revival","Endless Reign","Unstable Power","Behemoth’s Wrath","Treacherous Feast","Pull of the Deep","Royal Decree: Silence","Crushing Cold","Assassin’s Blizzard","Arctic Giant’s Protection","Endless Winter","Necrotic Bloom","Hollow Conscription","Tainted Vitality","Festering Edge","Curse of Decay","Soul Reservoir","Unshaken Form","Triple Petal Slash","Perfect Strike","Flow State","Ascendant War Doctrine"]);
 const REAL_FABLED_IMPLEMENTED=new Set(Object.keys(FABLED).filter(n=>FABLED[n]&&FABLED[n]!=='None'));
 const FINAL_ALL_ABILITIES=[...new Set(CARDS.map(c=>c.ability?.name).filter(Boolean))];
 const FINAL_NORMAL_MISSING=FINAL_ALL_ABILITIES.filter(n=>!FULL_HANDLED.has(n));
+const FINAL_FABLED_MISSING=[...EXPECTED_FABLED_NAMES].filter(n=>!REAL_FABLED_IMPLEMENTED.has(n));
+const FINAL_FABLED_EXTRA=[...REAL_FABLED_IMPLEMENTED].filter(n=>!EXPECTED_FABLED_NAMES.has(n));
 const FINAL_FABLED_MISSING_HANDLERS=[...REAL_FABLED_IMPLEMENTED].filter(n=>!FULL_HANDLED.has(n));
 const FINAL_FABLED_ORPHANS=[...REAL_FABLED_IMPLEMENTED].filter(n=>!FINAL_ALL_ABILITIES.includes(n));
 const FINAL_BOOTSTRAP_LOST=Object.keys(EXTRACTED_FABLED).filter(n=>!REAL_FABLED_IMPLEMENTED.has(n));
@@ -13,6 +16,8 @@ const FINAL_AUDIT_ERRORS=[];
 if(FINAL_ALL_ABILITIES.length!==EXPECTED_NORMAL_ABILITIES)FINAL_AUDIT_ERRORS.push(`normal ability count ${FINAL_ALL_ABILITIES.length}/${EXPECTED_NORMAL_ABILITIES}`);
 if(REAL_FABLED_IMPLEMENTED.size!==EXPECTED_FABLED_UPGRADES)FINAL_AUDIT_ERRORS.push(`Fabled ability count ${REAL_FABLED_IMPLEMENTED.size}/${EXPECTED_FABLED_UPGRADES}`);
 if(FINAL_NORMAL_MISSING.length)FINAL_AUDIT_ERRORS.push(`normal handlers missing: ${FINAL_NORMAL_MISSING.join(', ')}`);
+if(FINAL_FABLED_MISSING.length)FINAL_AUDIT_ERRORS.push(`game Fabled definitions missing: ${FINAL_FABLED_MISSING.join(', ')}`);
+if(FINAL_FABLED_EXTRA.length)FINAL_AUDIT_ERRORS.push(`unexpected Fabled definitions: ${FINAL_FABLED_EXTRA.join(', ')}`);
 if(FINAL_FABLED_MISSING_HANDLERS.length)FINAL_AUDIT_ERRORS.push(`Fabled handlers missing: ${FINAL_FABLED_MISSING_HANDLERS.join(', ')}`);
 if(FINAL_FABLED_ORPHANS.length)FINAL_AUDIT_ERRORS.push(`orphan Fabled definitions: ${FINAL_FABLED_ORPHANS.join(', ')}`);
 if(FINAL_BOOTSTRAP_LOST.length)FINAL_AUDIT_ERRORS.push(`bootstrap Fabled definitions lost: ${FINAL_BOOTSTRAP_LOST.join(', ')}`);
@@ -22,6 +27,8 @@ window.CARDBORN_ABILITY_AUDIT={
   handled:FULL_HANDLED.size,
   missing:[...FINAL_NORMAL_MISSING],
   fabled:REAL_FABLED_IMPLEMENTED.size,
+  fabledMissing:[...FINAL_FABLED_MISSING],
+  fabledExtra:[...FINAL_FABLED_EXTRA],
   fabledMissingHandlers:[...FINAL_FABLED_MISSING_HANDLERS],
   fabledOrphans:[...FINAL_FABLED_ORPHANS],
   expected:{cards:150,normalAbilities:EXPECTED_NORMAL_ABILITIES,fabledUpgrades:EXPECTED_FABLED_UPGRADES},
