@@ -1,6 +1,31 @@
-for(const k of Object.keys(FABLED))if(!Object.prototype.hasOwnProperty.call(EXTRACTED_FABLED,k))delete FABLED[k];
-Object.assign(FABLED,EXTRACTED_FABLED);
-const REAL_FABLED_IMPLEMENTED=new Set(['Field Guardian','Peasant’s Bravery','Pillage','Focused Aim','Ambush','Purifying Light','Nature’s Guardian','Dark Pact','Backstab','Resilience','Holy Strike','Double Strike','Scurrying Escape','Savage Fury','Imperial Advance','Grace of the Divine','Soul Reservoir','Endless Hunger','Celestial Smite','King’s Command','Fate Reversal','Royal Decree: Silence','Crushing Cold','Assassin’s Blizzard','Endless Winter','Necrotic Bloom','Tainted Vitality','Festering Edge','Curse of Decay','Void Devastation','Event Horizon','Furnace Heart','Nullify']);
-const REAL_FABLED_MISSING=Object.keys(EXTRACTED_FABLED).filter(n=>!REAL_FABLED_IMPLEMENTED.has(n)||!FULL_HANDLED.has(n));
-const REAL_FABLED_EXTRA=[...REAL_FABLED_IMPLEMENTED].filter(n=>!Object.prototype.hasOwnProperty.call(EXTRACTED_FABLED,n));
-if(REAL_FABLED_MISSING.length||REAL_FABLED_EXTRA.length)console.error('Cardborn Fabled audit mismatch',{missing:REAL_FABLED_MISSING,extra:REAL_FABLED_EXTRA});
+// Final Fabled integrity pass.
+// IMPORTANT: app-7a/app-7b already expanded FABLED to the full game-derived table.
+// Never delete those entries here; FULL_fab() uses this object to decide whether upgraded mechanics run.
+const REAL_FABLED_IMPLEMENTED=new Set(Object.keys(FABLED).filter(n=>FABLED[n]&&FABLED[n]!=='None'));
+const FINAL_ALL_ABILITIES=[...new Set(CARDS.map(c=>c.ability?.name).filter(Boolean))];
+const FINAL_NORMAL_MISSING=FINAL_ALL_ABILITIES.filter(n=>!FULL_HANDLED.has(n));
+const FINAL_FABLED_MISSING_HANDLERS=[...REAL_FABLED_IMPLEMENTED].filter(n=>!FULL_HANDLED.has(n));
+const FINAL_FABLED_ORPHANS=[...REAL_FABLED_IMPLEMENTED].filter(n=>!FINAL_ALL_ABILITIES.includes(n));
+const FINAL_BOOTSTRAP_LOST=Object.keys(EXTRACTED_FABLED).filter(n=>!REAL_FABLED_IMPLEMENTED.has(n));
+const EXPECTED_NORMAL_ABILITIES=137;
+const EXPECTED_FABLED_UPGRADES=125;
+const FINAL_AUDIT_ERRORS=[];
+if(FINAL_ALL_ABILITIES.length!==EXPECTED_NORMAL_ABILITIES)FINAL_AUDIT_ERRORS.push(`normal ability count ${FINAL_ALL_ABILITIES.length}/${EXPECTED_NORMAL_ABILITIES}`);
+if(REAL_FABLED_IMPLEMENTED.size!==EXPECTED_FABLED_UPGRADES)FINAL_AUDIT_ERRORS.push(`Fabled ability count ${REAL_FABLED_IMPLEMENTED.size}/${EXPECTED_FABLED_UPGRADES}`);
+if(FINAL_NORMAL_MISSING.length)FINAL_AUDIT_ERRORS.push(`normal handlers missing: ${FINAL_NORMAL_MISSING.join(', ')}`);
+if(FINAL_FABLED_MISSING_HANDLERS.length)FINAL_AUDIT_ERRORS.push(`Fabled handlers missing: ${FINAL_FABLED_MISSING_HANDLERS.join(', ')}`);
+if(FINAL_FABLED_ORPHANS.length)FINAL_AUDIT_ERRORS.push(`orphan Fabled definitions: ${FINAL_FABLED_ORPHANS.join(', ')}`);
+if(FINAL_BOOTSTRAP_LOST.length)FINAL_AUDIT_ERRORS.push(`bootstrap Fabled definitions lost: ${FINAL_BOOTSTRAP_LOST.join(', ')}`);
+window.CARDBORN_ABILITY_AUDIT={
+  cards:CARDS.length,
+  uniqueAbilities:FINAL_ALL_ABILITIES.length,
+  handled:FULL_HANDLED.size,
+  missing:[...FINAL_NORMAL_MISSING],
+  fabled:REAL_FABLED_IMPLEMENTED.size,
+  fabledMissingHandlers:[...FINAL_FABLED_MISSING_HANDLERS],
+  fabledOrphans:[...FINAL_FABLED_ORPHANS],
+  expected:{cards:150,normalAbilities:EXPECTED_NORMAL_ABILITIES,fabledUpgrades:EXPECTED_FABLED_UPGRADES},
+  ok:CARDS.length===150&&FINAL_AUDIT_ERRORS.length===0
+};
+if(FINAL_AUDIT_ERRORS.length||CARDS.length!==150)console.error('Cardborn final ability audit failed',{errors:FINAL_AUDIT_ERRORS,cards:CARDS.length,audit:window.CARDBORN_ABILITY_AUDIT});
+else console.info('Cardborn final ability audit passed',window.CARDBORN_ABILITY_AUDIT);
