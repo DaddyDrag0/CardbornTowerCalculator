@@ -1,0 +1,29 @@
+// Parallel-worker stability patch.
+// - Always use the lightweight worker wrapper so long debug timelines cannot collapse
+//   the 8-way worker pool into the one-thread fallback.
+// - Recreate battle debug only when the user clicks a specific completed run.
+
+PROGRESS_createWorkers=function(count){
+  if(typeof Worker!=='function')return[];
+  const out=[];
+  try{
+    for(let i=0;i<count;i++)out.push(new Worker('./sim-worker-fast.js?v=1'));
+    return out;
+  }catch(err){
+    out.forEach(w=>{try{w.terminate()}catch(_){}});
+    console.warn('Cardborn parallel workers unavailable; using fallback.',err);
+    return[];
+  }
+};
+
+const PARALLEL_baseShowRunDebug=showRunDebug;
+showRunDebug=function(teamIndex,runIndex){
+  const run=state.teams[teamIndex]?.result?.runs?.[runIndex];
+  if(run&&!run.debug){
+    const floor=run.death<=state.cap?run.death:run.cleared;
+    if(Number.isFinite(Number(run.seed))&&Number.isFinite(Number(floor))&&floor>=1){
+      try{run.debug=replayFloor(state.teams[teamIndex],run.seed,floor).debug}catch(err){console.warn('Unable to build battle debug on demand.',err)}
+    }
+  }
+  return PARALLEL_baseShowRunDebug(teamIndex,runIndex);
+};
