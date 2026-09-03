@@ -1,11 +1,23 @@
 // Non-combat production calibration. The full card engine lives in app-7a..7e.
-// Timing: 2.5 seconds fixed overhead per floor + simulated battle interaction time.
+// Timing calibrated from observed Infinite Dungeon runs:
+//   - 0.50s per attack/action at 1x battle speed
+//   - 0.30s per active-card change at 1x battle speed
+//   - 0.30s fixed floor/transition overhead (not affected by battle speed)
+const TIMING_ACTION_SECONDS=0.50;
+const TIMING_CHANGE_SECONDS=0.30;
+const TIMING_FLOOR_OVERHEAD_SECONDS=0.30;
+
+runSeconds=function(x){
+  const speed=Math.max(0.01,Number(state.speed)||1);
+  return ((Number(x?.actions)||0)*TIMING_ACTION_SECONDS+(Number(x?.changes)||0)*TIMING_CHANGE_SECONDS)/speed;
+};
+
 PATCH_totalRunSeconds=function(run){
   if(!run)return 0;
   const reached=Math.max(state.start,Math.min(PATCH_MAX_FLOOR,Math.floor(Number(run.death<=PATCH_MAX_FLOOR?run.death:run.cleared)||state.start)));
   const floors=Math.max(1,reached-state.start+1);
   const interaction=runSeconds({actions:Number(run.actions)||0,changes:Number(run.changes)||0});
-  return floors*2.5+interaction;
+  return floors*TIMING_FLOOR_OVERHEAD_SECONDS+interaction;
 };
 
 // Production coverage marker used only for sanity checking; it is not rendered in the UI.
@@ -18,5 +30,7 @@ window.CARDBORN_ENGINE_STATUS={
   fabledMissing:window.CARDBORN_ABILITY_AUDIT?.fabledMissing||[],
   fabledMissingHandlers:window.CARDBORN_ABILITY_AUDIT?.fabledMissingHandlers||[],
   floorCap:50000,
-  floorOverheadSeconds:2.5
+  floorOverheadSeconds:TIMING_FLOOR_OVERHEAD_SECONDS,
+  actionSecondsAt1x:TIMING_ACTION_SECONDS,
+  changeSecondsAt1x:TIMING_CHANGE_SECONDS
 };
