@@ -1,9 +1,11 @@
 // Depth-calculator worker architecture for Infinite Tower.
-// The page launches one coordinator. The coordinator owns 8 child workers and
-// continuously feeds each child one run at a time, matching the proven Depth setup.
+// Desktop-capable browsers use one coordinator which owns up to 8 child workers.
+// Browsers that cannot spawn nested workers (common on some mobile Safari builds)
+// automatically fall back to a direct page-owned child-worker pool.
 
 const COORDINATOR_MAX_WORKERS=8;
-const COORDINATOR_URL='./sim-coordinator.js?v=1';
+const COORDINATOR_URL='./sim-coordinator.js?v=2';
+const DIRECT_CHILD_URL='./sim-child.js?v=2';
 
 function COORDINATOR_runTeam(payload,onProgress){
   return new Promise((resolve,reject)=>{
@@ -29,42 +31,113 @@ function COORDINATOR_runTeam(payload,onProgress){
   });
 }
 
+function DIRECT_runTeam(payload,onProgress){
+  return new Promise((resolve,reject)=>{
+    if(typeof Worker!=='function'){reject(new Error('Web Workers are unavailable in this browser.'));return}
+    const runs=Math.max(1,Math.floor(Number(payload.runs)||1));
+    const hardware=Math.max(1,Number(navigator.hardwareConcurrency)||4);
+    const workerCount=Math.min(COORDINATOR_MAX_WORKERS,runs,hardware);
+    const results=new Array(runs),workers=[],active=new Map();
+    let nextRun=0,completed=0,settled=false;
+
+    const stopAll=()=>workers.forEach(w=>{try{w.terminate()}catch(_){}});
+    const fail=err=>{if(settled)return;settled=true;stopAll();reject(err instanceof Error?err:new Error(String(err)))};
+    const report=floor=>{
+      const vals=[...active.values()].map(x=>x.floor).filter(Number.isFinite);
+      onProgress?.({
+        type:'progress',completed,total:runs,workerCount,activeRuns:active.size,
+        floor:Number(floor)||payload.start||1,
+        minActiveFloor:vals.length?Math.min(...vals):undefined,
+        maxActiveFloor:vals.length?Math.max(...vals):undefined
+      });
+    };
+    const finish=()=>{
+      if(settled||completed<runs)return;
+      settled=true;stopAll();resolve(results);
+    };
+    const dispatch=(w,workerIndex)=>{
+      if(settled)return;
+      if(nextRun>=runs){active.delete(workerIndex);finish();return}
+      const runIndex=nextRun++;
+      const seed=(Number(payload.base)+Math.imul(Number(payload.teamIndex)||0,0x9e3779b9)+Math.imul(runIndex,2654435761))>>>0;
+      const jobId=`${payload.teamIndex||0}:${runIndex}:${seed}`;
+      w.__job={jobId,runIndex,workerIndex};
+      active.set(workerIndex,{runIndex,floor:Number(payload.start)||1});
+      report(payload.start);
+      w.postMessage({type:'run',jobId,team:payload.team,bans:payload.bans||[],start:payload.start,cap:payload.cap,speed:payload.speed,seed});
+    };
+
+    try{
+      for(let i=0;i<workerCount;i++){
+        const w=new Worker(DIRECT_CHILD_URL);workers.push(w);
+        w.onerror=ev=>fail(ev?.error||ev?.message||'Infinite Tower mobile worker failed');
+        w.onmessage=ev=>{
+          const msg=ev.data||{};
+          if(msg.type==='ready')return;
+          if(msg.type==='boot-error'||msg.type==='error'){fail(msg.error||'Infinite Tower mobile worker failed');return}
+          const job=w.__job;if(!job||msg.jobId!==job.jobId)return;
+          if(msg.type==='progress'){
+            active.set(i,{runIndex:job.runIndex,floor:Math.max(1,Math.floor(Number(msg.floor)||Number(payload.start)||1))});
+            report(msg.floor);return;
+          }
+          if(msg.type==='result'){
+            results[job.runIndex]=msg.result;completed++;active.delete(i);
+            report(msg.result?.death<=payload.cap?msg.result.death:msg.result?.cleared);
+            if(completed>=runs){finish();return}
+            dispatch(w,i);
+          }
+        };
+        dispatch(w,i);
+      }
+    }catch(err){fail(err)}
+  });
+}
+
+async function PARALLEL_runTeam(payload,onProgress){
+  try{
+    return await COORDINATOR_runTeam(payload,onProgress);
+  }catch(err){
+    console.warn('Coordinator workers unavailable; switching to mobile-safe direct workers.',err);
+    return DIRECT_runTeam(payload,onProgress);
+  }
+}
+
 run=async function(indices){
   if(state.running)return;
   const valid=[...new Set((indices||[]).filter(i=>i>=0&&i<state.teams.length&&ready(state.teams[i])))];
   if(!valid.length)return;
 
   const runsPerTeam=Math.max(1,Math.floor(Number(state.runs)||1));
-  const workerCount=Math.min(COORDINATOR_MAX_WORKERS,runsPerTeam);
+  const initialWorkerCount=Math.min(COORDINATOR_MAX_WORKERS,runsPerTeam);
   const base=Date.now()>>>0,totalWork=valid.length*runsPerTeam;
   const snapshots=new Map(valid.map(i=>[i,PROGRESS_teamSnapshot(state.teams[i])]));
 
   state.running=true;
   state.pAbilities=true;
   state.eAbilities=true;
-  state.progress={teamIndex:valid[0],teamPosition:1,teamTotal:valid.length,teamCompleted:0,totalRuns:runsPerTeam,workerCount,floor:state.start,completed:0,totalWork};
+  state.progress={teamIndex:valid[0],teamPosition:1,teamTotal:valid.length,teamCompleted:0,totalRuns:runsPerTeam,workerCount:initialWorkerCount,floor:state.start,completed:0,totalWork};
   render();
   await PROGRESS_sleep();
 
   try{
     for(let teamPos=0;teamPos<valid.length;teamPos++){
       const ti=valid[teamPos],snapshot=snapshots.get(ti);
-      Object.assign(state.progress,{teamIndex:ti,teamPosition:teamPos+1,teamTotal:valid.length,teamCompleted:0,totalRuns:runsPerTeam,workerCount,floor:state.start,completed:teamPos*runsPerTeam});
+      Object.assign(state.progress,{teamIndex:ti,teamPosition:teamPos+1,teamTotal:valid.length,teamCompleted:0,totalRuns:runsPerTeam,workerCount:initialWorkerCount,floor:state.start,completed:teamPos*runsPerTeam});
       PROGRESS_updateDom();
 
-      const results=await COORDINATOR_runTeam({
+      const results=await PARALLEL_runTeam({
         teamIndex:ti,team:snapshot,bans:[...state.bans],start:state.start,cap:state.cap,
         speed:state.speed,base,runs:runsPerTeam
       },msg=>{
         if(!state.progress)return;
         state.progress.teamCompleted=Math.max(0,Math.min(runsPerTeam,Number(msg.completed)||0));
         state.progress.completed=teamPos*runsPerTeam+state.progress.teamCompleted;
-        state.progress.workerCount=Number(msg.workerCount)||workerCount;
+        state.progress.workerCount=Math.max(1,Number(msg.workerCount)||initialWorkerCount);
         state.progress.floor=Math.max(1,Math.floor(Number(msg.maxActiveFloor??msg.floor)||state.start));
         PROGRESS_updateDom();
       });
 
-      if(results.length!==runsPerTeam)throw new Error(`Coordinator returned ${results.length}/${runsPerTeam} runs.`);
+      if(results.length!==runsPerTeam)throw new Error(`Parallel engine returned ${results.length}/${runsPerTeam} runs.`);
       state.teams[ti].result=summarize(results);
       state.progress.completed=(teamPos+1)*runsPerTeam;
       state.progress.teamCompleted=runsPerTeam;
@@ -73,7 +146,7 @@ run=async function(indices){
     }
   }catch(err){
     console.error('Infinite Tower parallel simulation failed.',err);
-    alert(`Parallel simulation failed: ${err?.message||err}`);
+    alert(`Simulation failed: ${err?.message||err}`);
   }finally{
     state.running=false;
     state.progress=null;
