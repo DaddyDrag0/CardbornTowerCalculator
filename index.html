@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#14191f" />
   <title>Infinite Tower</title>
-  <script>(()=>{try{const t=localStorage.getItem('cardborn-theme');if(t==='castle'||t==='slate')document.documentElement.dataset.theme=t}catch(_){}})();</script>
+  <script>(()=>{try{document.documentElement.dataset.theme='slate';localStorage.removeItem('cardborn-theme');const k='cardborn-infinite-v4',s=JSON.parse(localStorage.getItem(k)||'null');if(s&&s.theme!=='slate'){s.theme='slate';localStorage.setItem(k,JSON.stringify(s))}}catch(_){}})();</script>
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./patch.css" />
-  <link rel="stylesheet" href="./castle-theme.css?v=1" />
 </head>
 <body>
   <div id="app"><div class="loading">Loading Cardborn…</div></div>
@@ -22,6 +21,6 @@
   <script src="./data/image-ids.js?v=9"></script>
   <script src="./data/thumbnails.js?v=9"></script>
   <script src="./app-loader.js?v=15"></script>
-  <script src="./branding.js?v=1"></script>
+  <script src="./branding.js?v=2"></script>
 </body>
 </html>
