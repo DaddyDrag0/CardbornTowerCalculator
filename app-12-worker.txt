@@ -1,0 +1,18 @@
+// Worker-safe interaction correctness patch.
+// Bulk workers need the real Titanic Beast fix, but must not load page-only
+// worker-management/debug UI code from app-12.txt.
+
+const WORKER_INTERACTION_baseTurnStart=turnStart;
+turnStart=function(f,t,own,foes,r,ctx){
+  const titanSupport=!!(f&&f.ability?.name==='Titan’s Kindness'&&FULL_enabled(f,ctx)&&!f._titanHadDeath);
+  if(!titanSupport)return WORKER_INTERACTION_baseTurnStart(f,t,own,foes,r,ctx);
+
+  const originalBuff=buff;
+  const titanPct=FULL_fab(f)?.15:.10;
+  buff=function(target,amount){
+    if(target===f&&Math.abs(Number(amount)-titanPct)<1e-9)return;
+    return originalBuff(target,amount);
+  };
+  try{return WORKER_INTERACTION_baseTurnStart(f,t,own,foes,r,ctx)}
+  finally{buff=originalBuff}
+};
