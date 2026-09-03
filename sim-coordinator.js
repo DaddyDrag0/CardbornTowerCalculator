@@ -3,7 +3,7 @@
 // the next queued run to whichever child finishes first.
 
 const MAX_WORKERS=8;
-const CHILD_URL='./sim-child.js?v=34';
+const CHILD_URL='./sim-child-exp.js?v=35';
 
 self.onmessage=e=>{
   const req=e.data||{};
@@ -38,14 +38,12 @@ self.onmessage=e=>{
     if(settled)return;
     if(nextRun>=runs){active.delete(workerIndex);finish();return}
     const runIndex=nextRun++;
-    const seed=(Number(req.base) + Math.imul(Number(req.teamIndex)||0,0x9e3779b9) + Math.imul(runIndex,2654435761))>>>0;
+    const seed=(Number(req.base)+Math.imul(Number(req.teamIndex)||0,0x9e3779b9)+Math.imul(runIndex,2654435761))>>>0;
     const jobId=`${req.teamIndex||0}:${runIndex}:${seed}`;
     w.__job={jobId,runIndex,workerIndex};
     active.set(workerIndex,{runIndex,floor:Number(req.start)||1});
     report(req.start);
-    w.postMessage({
-      type:'run',jobId,team:req.team,bans:req.bans||[],start:req.start,cap:req.cap,speed:req.speed,seed
-    });
+    w.postMessage({type:'run',jobId,team:req.team,bans:req.bans||[],start:req.start,cap:req.cap,speed:req.speed,seed});
   };
 
   try{
