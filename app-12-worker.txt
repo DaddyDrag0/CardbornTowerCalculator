@@ -16,3 +16,16 @@ turnStart=function(f,t,own,foes,r,ctx){
   try{return WORKER_INTERACTION_baseTurnStart(f,t,own,foes,r,ctx)}
   finally{buff=originalBuff}
 };
+
+// sim-child keeps its original validated state, while the v35 wrapper exposes the
+// complete requested ban list here. This lets Experimental mode use up to 10 bans
+// without changing the stable child-worker boot path.
+const WORKER_INTERACTION_baseMakeEnemy=makeEnemy;
+makeEnemy=function(floor,r){
+  const all=(self.__cardbornAllBans||[]).filter(n=>BY.has(n)&&!BY.get(n).isSecret).slice(0,10);
+  if(!all.length)return WORKER_INTERACTION_baseMakeEnemy(floor,r);
+  const previous=state.bans;
+  state.bans=all;
+  try{return WORKER_INTERACTION_baseMakeEnemy(floor,r)}
+  finally{state.bans=previous}
+};
