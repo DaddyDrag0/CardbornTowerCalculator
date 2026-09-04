@@ -1,5 +1,5 @@
 (()=>{
-  const CURRENT='40';
+  const CURRENT='41';
   let reloading=false;
   async function check(){
     if(reloading)return;
