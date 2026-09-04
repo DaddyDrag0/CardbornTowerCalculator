@@ -1,0 +1,111 @@
+// Infinite Tower reward estimator.
+// Rewards are generated on every CLEARED floor. The card count and all Infinite
+// luck bonuses are evaluated floor-by-floor, so earlier rewards do not incorrectly
+// receive the luck earned on later floors. Borders are independent and stackable.
+
+const REWARDS_STORE='cardborn-infinite-rewards-v1';
+const REWARDS_DENOMS={shiny:100,awakened:1000000,fabled:10000,corrupted:100000};
+const REWARDS_DEFAULTS={luck:1,shiny:1,awakened:1,fabled:2,corrupted:1};
+state.rewardStats={...REWARDS_DEFAULTS};
+try{
+  const saved=JSON.parse(localStorage.getItem(REWARDS_STORE)||'null');
+  if(saved&&typeof saved==='object')for(const k of Object.keys(REWARDS_DEFAULTS)){
+    const n=Number(saved[k]);if(Number.isFinite(n)&&n>=0)state.rewardStats[k]=n;
+  }
+}catch(_){}
+
+function REWARDS_save(){try{localStorage.setItem(REWARDS_STORE,JSON.stringify(state.rewardStats))}catch(_){}}
+function REWARDS_cardsOnFloor(f){
+  f=Math.max(1,Math.floor(Number(f)||1));
+  if(f<=9)return 6;if(f<=19)return 8;if(f<=34)return 10;if(f<=49)return 12;
+  if(f<=74)return 15;if(f<=99)return 18;if(f<=149)return 22;if(f<=189)return 25;
+  if(f<=225)return 28;if(f<=325)return 32;if(f<=450)return 36;if(f<=525)return 40;
+  if(f<=650)return 45;return 50;
+}
+function REWARDS_floorStats(f){
+  f=Math.max(1,Math.floor(Number(f)||1));const b=state.rewardStats;
+  return{
+    luck:b.luck+8*Math.floor(f/5),
+    shiny:b.shiny+.4*Math.floor(f/10),
+    awakened:b.awakened+Math.floor(f/15),
+    fabled:b.fabled,
+    corrupted:b.corrupted+.5*Math.floor(f/12)
+  };
+}
+function REWARDS_p(v,denom){return Math.max(0,Math.min(1,(Number(v)||0)/denom))}
+function REWARDS_stackDistribution(probs){
+  let d=[1,0,0,0,0];
+  for(const p of probs){const n=[0,0,0,0,0];for(let k=0;k<=4;k++){n[k]+=d[k]*(1-p);if(k<4)n[k+1]+=d[k]*p}d=n}
+  return d;
+}
+
+let REWARDS_cache=null;
+function REWARDS_prefix(maxFloor){
+  maxFloor=Math.max(0,Math.floor(Number(maxFloor)||0));
+  const start=Math.max(1,Math.floor(Number(state.start)||1));
+  const key=[start,maxFloor,...Object.keys(REWARDS_DEFAULTS).map(k=>state.rewardStats[k])].join('|');
+  if(REWARDS_cache?.key===key)return REWARDS_cache;
+  const fields=['cards','weightedLuck','shiny','awakened','fabled','corrupted','any','stack2','stack3','stack4','sa','sf','sc','af','ac','fc'];
+  const a={};for(const f of fields)a[f]=new Float64Array(maxFloor+1);
+  for(let floor=1;floor<=maxFloor;floor++){
+    for(const f of fields)a[f][floor]=a[f][floor-1];
+    if(floor<start)continue;
+    const n=REWARDS_cardsOnFloor(floor),s=REWARDS_floorStats(floor),ps=REWARDS_p(s.shiny,REWARDS_DENOMS.shiny),pa=REWARDS_p(s.awakened,REWARDS_DENOMS.awakened),pf=REWARDS_p(s.fabled,REWARDS_DENOMS.fabled),pc=REWARDS_p(s.corrupted,REWARDS_DENOMS.corrupted),dist=REWARDS_stackDistribution([ps,pa,pf,pc]);
+    a.cards[floor]+=n;a.weightedLuck[floor]+=n*s.luck;
+    a.shiny[floor]+=n*ps;a.awakened[floor]+=n*pa;a.fabled[floor]+=n*pf;a.corrupted[floor]+=n*pc;
+    a.any[floor]+=n*(1-dist[0]);a.stack2[floor]+=n*(dist[2]+dist[3]+dist[4]);a.stack3[floor]+=n*(dist[3]+dist[4]);a.stack4[floor]+=n*dist[4];
+    a.sa[floor]+=n*ps*pa;a.sf[floor]+=n*ps*pf;a.sc[floor]+=n*ps*pc;a.af[floor]+=n*pa*pf;a.ac[floor]+=n*pa*pc;a.fc[floor]+=n*pf*pc;
+  }
+  return REWARDS_cache={key,start,maxFloor,a};
+}
+function REWARDS_at(prefix,floor){
+  floor=Math.max(0,Math.min(prefix.maxFloor,Math.floor(Number(floor)||0)));const o={};
+  for(const[k,v]of Object.entries(prefix.a))o[k]=v[floor];return o;
+}
+function REWARDS_mean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
+function REWARDS_median(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[Math.floor((s.length-1)/2)]}
+function REWARDS_expectedFmt(n){
+  n=Number(n)||0;if(n>=1000)return compact(n);if(n>=100)return n.toFixed(0);if(n>=10)return n.toFixed(1).replace(/\.0$/,'');if(n>=1)return n.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');if(n===0)return'0';return n.toPrecision(2);
+}
+function REWARDS_summary(r){
+  const runs=r?.runs||[];if(!runs.length)return null;const maxFloor=Math.max(...runs.map(x=>Math.max(0,Number(x.cleared)||0))),pre=REWARDS_prefix(maxFloor),values=runs.map(x=>REWARDS_at(pre,x.cleared));
+  const avg=k=>REWARDS_mean(values.map(v=>v[k])),cards=values.map(v=>v.cards),rollLuck=values.map(v=>v.cards>0?v.weightedLuck/v.cards:state.rewardStats.luck),medFloor=Math.max(0,Math.floor(Number(r.med)||0)),med=REWARDS_at(pre,medFloor),end=REWARDS_floorStats(medFloor||Math.max(1,state.start));
+  return{avgCards:avg('cards'),medianCards:REWARDS_median(cards),lowCards:Math.min(...cards),highCards:Math.max(...cards),avgRollLuck:REWARDS_mean(rollLuck),med,end,avg:Object.fromEntries(['shiny','awakened','fabled','corrupted','any','stack2','stack3','stack4','sa','sf','sc','af','ac','fc'].map(k=>[k,avg(k)])),medFloor};
+}
+
+function REWARDS_settingsHtml(){
+  const s=state.rewardStats,input=(k,label,step='0.1')=>`<label><span>${label}</span><input type="number" min="0" step="${step}" value="${esc(s[k])}" data-reward-stat="${k}"></label>`;
+  return`<section class="reward-settings-box"><div class="reward-settings-head"><div><span>REWARD SETTINGS</span><small>Starting stats before Infinite floor bonuses.</small></div><b>F${Math.max(1,state.start)}+</b></div><div class="reward-input-grid">${input('luck','Luck','1')}${input('shiny','Shiny Luck')}${input('awakened','Awakened Luck')}${input('fabled','Fabled Luck')}${input('corrupted','Corrupted Luck')}</div><div class="reward-rules"><span><b>Cards:</b> 6/floor → 50/floor at F651+</span><span><b>Luck:</b> +8 / 5 floors</span><span><b>Shiny:</b> +0.4 / 10</span><span><b>Awakened:</b> +1 / 15</span><span><b>Corrupted:</b> +0.5 / 12</span></div></section>`;
+}
+function REWARDS_resultHtml(r){
+  const x=REWARDS_summary(r);if(!x)return'';const a=x.avg,e=x.end;
+  const stat=(name,val,small='avg / run')=>`<div><span>${name}</span><b>${REWARDS_expectedFmt(val)}</b><small>${small}</small></div>`;
+  return`<section class="reward-result"><div class="reward-result-head"><div><span>INFINITE REWARDS</span><b>Generated floor by floor</b></div><small>F${Math.max(1,state.start)} → median F${x.medFloor}</small></div><div class="reward-main-grid">${stat('Average cards',x.avgCards)}${stat('Median cards',x.medianCards,'middle run')}${stat('Avg card Luck',x.avgRollLuck,'weighted by generated cards')}${stat('Ending Luck',e.luck,'at median clear')}</div><div class="reward-border-title"><span>EXPECTED BORDERS</span><small>Inclusive — stacked cards count in every border they rolled.</small></div><div class="reward-border-grid">${stat('Shiny',a.shiny)}${stat('Awakened',a.awakened)}${stat('Fabled',a.fabled)}${stat('Corrupted',a.corrupted)}${stat('Any border',a.any)}</div><div class="reward-ending"><span>Median-floor luck:</span><b>Shiny ${REWARDS_expectedFmt(e.shiny)}</b><b>Awakened ${REWARDS_expectedFmt(e.awakened)}</b><b>Fabled ${REWARDS_expectedFmt(e.fabled)}</b><b>Corrupted ${REWARDS_expectedFmt(e.corrupted)}</b></div><details class="reward-stacks"><summary>Stacked border estimates</summary><div class="reward-stack-grid">${stat('2+ borders',a.stack2)}${stat('3+ borders',a.stack3)}${stat('All 4',a.stack4)}${stat('Shiny + Awakened',a.sa)}${stat('Shiny + Fabled',a.sf)}${stat('Shiny + Corrupted',a.sc)}${stat('Awakened + Fabled',a.af)}${stat('Awakened + Corrupted',a.ac)}${stat('Fabled + Corrupted',a.fc)}</div><p>Independent stack model: Shiny 1/100, Fabled 1/10K, Corrupted 1/100K, Awakened 1/1M, scaled by that floor's matching border luck. Milestone bonuses are applied to the reward from the milestone floor itself.</p></details></section>`;
+}
+function REWARDS_decorate(){
+  const body=root.querySelector('.simulation-body');
+  if(body&&!body.querySelector('.reward-settings-box')){
+    const wrap=document.createElement('div');wrap.innerHTML=REWARDS_settingsHtml();const node=wrap.firstElementChild,corr=body.querySelector('.corrupted-ability-box'),bans=body.querySelector('.depth-ban-box');body.insertBefore(node,corr||bans||body.firstChild);
+  }
+  const cards=[...root.querySelectorAll('.result-card')],teams=state.teams.map((t,i)=>({t,i})).filter(x=>x.t.result);
+  cards.forEach((card,j)=>{card.querySelector('.reward-result')?.remove();const r=teams[j]?.t?.result;if(r)card.insertAdjacentHTML('beforeend',REWARDS_resultHtml(r))});
+}
+
+const REWARDS_baseRender=render;
+render=function(){REWARDS_baseRender();REWARDS_decorate()};
+
+root.addEventListener('change',e=>{
+  const input=e.target.closest?.('[data-reward-stat]');if(!input)return;
+  const k=input.dataset.rewardStat;if(!(k in REWARDS_DEFAULTS))return;const n=Math.max(0,Number(input.value)||0);state.rewardStats[k]=n;REWARDS_cache=null;REWARDS_save();render();
+});
+
+const REWARDS_style=document.createElement('style');
+REWARDS_style.textContent=`
+.reward-settings-box{margin-top:13px;border:1px solid var(--line-strong,#334151);background:var(--surface-1,#161d25);border-radius:12px;padding:11px}
+.reward-settings-head,.reward-result-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.reward-settings-head>div>span,.reward-result-head>div>span,.reward-border-title>span{display:block;color:#a8c8ce;font-size:9px;font-weight:850;letter-spacing:.1em}.reward-settings-head small,.reward-result-head small,.reward-border-title small{display:block;color:#71808f;font-size:8px;line-height:1.4;margin-top:3px}.reward-settings-head>b{color:#94bcc3;font-size:9px}
+.reward-input-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:10px}.reward-input-grid label{display:block}.reward-input-grid span{display:block;color:#728191;font-size:8px;margin:0 0 4px 2px}.reward-input-grid input{width:100%;box-sizing:border-box;color:var(--text,#e5edf4);background:var(--surface-3,#111821);border:1px solid var(--line-strong,#334151);border-radius:8px;padding:8px 8px;outline:none;font-size:9px}.reward-input-grid input:focus{border-color:var(--accent-line,#5f929b)}
+.reward-rules{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px solid var(--line-inner,rgba(255,255,255,.07))}.reward-rules span{border:1px solid var(--line-soft,#283544);background:var(--surface-3,#111821);border-radius:999px;padding:4px 7px;color:#748394;font-size:7px}.reward-rules b{color:#9aabbc}
+.reward-result{margin-top:12px;padding-top:12px;border-top:1px solid var(--line-inner,rgba(255,255,255,.08))}.reward-result-head>div>b{display:block;color:#c3d0dc;font-size:10px;margin-top:3px}.reward-main-grid,.reward-border-grid,.reward-stack-grid{display:grid;gap:6px;margin-top:9px}.reward-main-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.reward-border-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.reward-stack-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.reward-main-grid>div,.reward-border-grid>div,.reward-stack-grid>div{min-width:0;border:1px solid var(--line-soft,#283544);background:var(--surface-3,#111821);border-radius:9px;padding:8px}.reward-main-grid span,.reward-border-grid span,.reward-stack-grid span{display:block;color:#718091;font-size:7px;text-transform:uppercase;letter-spacing:.05em}.reward-main-grid b,.reward-border-grid b,.reward-stack-grid b{display:block;color:#dce7ef;font-size:14px;line-height:1.15;margin-top:3px}.reward-main-grid small,.reward-border-grid small,.reward-stack-grid small{display:block;color:#657586;font-size:7px;line-height:1.35;margin-top:3px}.reward-border-title{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:11px}.reward-border-title small{text-align:right;max-width:260px}.reward-ending{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.reward-ending span{color:#6f7e8e;font-size:7px}.reward-ending b{border:1px solid var(--line-soft,#283544);border-radius:999px;padding:4px 7px;color:#9db2c1;font-size:7px;font-weight:700}.reward-stacks{margin-top:8px;border:1px solid var(--line-soft,#283544);border-radius:9px;background:rgba(0,0,0,.08);padding:8px}.reward-stacks summary{cursor:pointer;color:#a7b7c5;font-size:8px;font-weight:800}.reward-stacks p{color:#657586;font-size:7px;line-height:1.5;margin:8px 2px 0}
+@media(max-width:760px){.reward-input-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.reward-main-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.reward-border-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.reward-stack-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.reward-border-title{align-items:flex-start;flex-direction:column}.reward-border-title small{text-align:left}.reward-input-grid input{min-height:40px;font-size:11px}}
+`;
+document.head.appendChild(REWARDS_style);
