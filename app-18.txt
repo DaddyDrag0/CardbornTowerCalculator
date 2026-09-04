@@ -1,0 +1,147 @@
+// Depth-style Infinite Tower ban presets.
+// Four independent ban layouts are saved locally. Normal mode can actively use up
+// to 3 bans; Experimental can use up to 10. Experimental-only tail bans are kept
+// when temporarily switching back to normal mode instead of being deleted.
+
+const BAN_PRESET_STORE='cardborn-ban-presets-v1';
+state.banPresets=Array.from({length:4},()=>({bans:[],normalCount:0}));
+state.activeBanPreset=0;
+let BAN_PRESET_skipSync=false;
+
+function BAN_PRESET_sanitize(list){
+  return [...new Set((Array.isArray(list)?list:[]).map(String))]
+    .filter(n=>BY.has(n)&&!BY.get(n).isSecret)
+    .slice(0,10);
+}
+function BAN_PRESET_normalize(raw){
+  if(Array.isArray(raw)){
+    const bans=BAN_PRESET_sanitize(raw);
+    return{bans,normalCount:Math.min(3,bans.length)};
+  }
+  const bans=BAN_PRESET_sanitize(raw?.bans);
+  return{bans,normalCount:Math.max(0,Math.min(3,bans.length,Math.floor(Number(raw?.normalCount)??3)))};
+}
+function BAN_PRESET_active(){return state.banPresets[state.activeBanPreset]||{bans:[],normalCount:0}}
+function BAN_PRESET_limit(){return state.experimentalBans?10:3}
+function BAN_PRESET_visible(preset=BAN_PRESET_active()){
+  const p=BAN_PRESET_normalize(preset);
+  return state.experimentalBans?p.bans.slice(0,10):p.bans.slice(0,p.normalCount);
+}
+function BAN_PRESET_apply(){state.bans=BAN_PRESET_visible()}
+function BAN_PRESET_invalidate(){state.teams.forEach(t=>t.result=null)}
+function BAN_PRESET_persist(){
+  try{localStorage.setItem(BAN_PRESET_STORE,JSON.stringify({v:1,active:state.activeBanPreset,presets:state.banPresets}))}catch(_){}
+}
+function BAN_PRESET_syncFromState(){
+  const i=state.activeBanPreset,prior=BAN_PRESET_normalize(state.banPresets[i]),visible=BAN_PRESET_sanitize(state.bans);
+  if(state.experimentalBans){
+    prior.bans=visible.slice(0,10);
+    prior.normalCount=Math.min(prior.normalCount,prior.bans.length,3);
+  }else{
+    const current=visible.slice(0,3),tail=prior.bans.slice(prior.normalCount).filter(n=>!current.includes(n));
+    prior.bans=BAN_PRESET_sanitize([...current,...tail]);
+    prior.normalCount=current.length;
+  }
+  state.banPresets[i]=prior;
+}
+
+const BAN_PRESET_baseLoad=load;
+load=function(){
+  BAN_PRESET_baseLoad();
+  const migrated=BAN_PRESET_sanitize(state.bans);
+  let saved=null;
+  try{saved=JSON.parse(localStorage.getItem(BAN_PRESET_STORE)||'null')}catch(_){}
+  if(saved&&Array.isArray(saved.presets)){
+    state.banPresets=Array.from({length:4},(_,i)=>BAN_PRESET_normalize(saved.presets[i]));
+    state.activeBanPreset=Math.max(0,Math.min(3,Math.floor(Number(saved.active)||0)));
+  }else{
+    state.banPresets=Array.from({length:4},(_,i)=>i===0?{bans:migrated,normalCount:Math.min(3,migrated.length)}:{bans:[],normalCount:0});
+    state.activeBanPreset=0;
+  }
+  BAN_PRESET_apply();
+};
+
+const BAN_PRESET_baseSave=save;
+save=function(){
+  if(!BAN_PRESET_skipSync)BAN_PRESET_syncFromState();
+  BAN_PRESET_baseSave();
+  BAN_PRESET_persist();
+};
+
+function BAN_PRESET_encode(){
+  const p=BAN_PRESET_normalize(BAN_PRESET_active()),payload={v:1,bans:p.bans,normalCount:p.normalCount};
+  const bytes=new TextEncoder().encode(JSON.stringify(payload));let binary='';for(const byte of bytes)binary+=String.fromCharCode(byte);
+  return'CBTB1-'+btoa(binary);
+}
+function BAN_PRESET_decode(code){
+  const raw=String(code||'').trim();if(!raw.startsWith('CBTB1-'))throw new Error('Ban code must start with CBTB1-');
+  let payload;try{const binary=atob(raw.slice(6)),bytes=Uint8Array.from(binary,ch=>ch.charCodeAt(0));payload=JSON.parse(new TextDecoder().decode(bytes))}catch(_){throw new Error('Invalid ban code')}
+  if(!payload||payload.v!==1||!Array.isArray(payload.bans))throw new Error('Unsupported ban code');
+  const bans=BAN_PRESET_sanitize(payload.bans),normalCount=Math.max(0,Math.min(3,bans.length,Number.isFinite(Number(payload.normalCount))?Math.floor(Number(payload.normalCount)):Math.min(3,bans.length)));
+  return{bans,normalCount};
+}
+
+function BAN_PRESET_decorate(){
+  const box=root.querySelector('.depth-ban-box');if(!box)return;
+  box.querySelector('[data-ban-presets]')?.remove();
+  const limit=BAN_PRESET_limit(),wrap=document.createElement('div');wrap.className='depth-ban-layouts tower-ban-presets';wrap.dataset.banPresets='';
+  wrap.innerHTML=`<div class="depth-ban-layout-tabs">${state.banPresets.map((raw,i)=>{const p=BAN_PRESET_normalize(raw),count=state.experimentalBans?p.bans.length:p.normalCount,hidden=!state.experimentalBans&&p.bans.length>p.normalCount;return`<button type="button" data-ban-preset="${i}" class="${state.activeBanPreset===i?'on':''}" ${hidden?`title="${p.bans.length} total bans saved; ${p.normalCount} active outside Experimental mode"`:''}><span>Ban ${i+1}</span><small>${count}/${limit}${hidden?' +':''}</small></button>`}).join('')}</div><div class="depth-ban-layout-actions"><button type="button" data-ban-preset-export>Export Bans</button><button type="button" data-ban-preset-import>Import Bans</button></div>`;
+  const head=box.querySelector('.depth-ban-head');box.insertBefore(wrap,head||box.firstChild);
+  const title=head?.querySelector('span');if(title)title.textContent=`Infinite Tower bans · Ban ${state.activeBanPreset+1}`;
+}
+
+const BAN_PRESET_baseRender=render;
+render=function(){BAN_PRESET_baseRender();BAN_PRESET_decorate()};
+
+root.addEventListener('click',async e=>{
+  const tab=e.target.closest('[data-ban-preset]');
+  if(tab){
+    e.preventDefault();e.stopImmediatePropagation();BAN_PRESET_syncFromState();
+    state.activeBanPreset=Math.max(0,Math.min(3,Math.floor(Number(tab.dataset.banPreset)||0)));BAN_PRESET_apply();state.banQuery='';BAN_PRESET_invalidate();save();render();return;
+  }
+  const exp=e.target.closest('[data-ban-preset-export]');
+  if(exp){
+    e.preventDefault();e.stopImmediatePropagation();const code=BAN_PRESET_encode();
+    try{await navigator.clipboard.writeText(code);exp.textContent='Copied!';setTimeout(()=>{if(exp.isConnected)exp.textContent='Export Bans'},900)}catch(_){prompt('Copy this CBTB1 ban code:',code)}return;
+  }
+  const imp=e.target.closest('[data-ban-preset-import]');
+  if(imp){
+    e.preventDefault();e.stopImmediatePropagation();const code=prompt(`Paste a CBTB1 ban code into Ban ${state.activeBanPreset+1}:`);if(!code)return;
+    try{state.banPresets[state.activeBanPreset]=BAN_PRESET_decode(code);BAN_PRESET_apply();state.banQuery='';BAN_PRESET_invalidate();save();render()}catch(error){alert(`Could not import bans: ${error?.message||error}`)}return;
+  }
+},true);
+
+// app-14 owns the Experimental toggle at root capture and intentionally stops the
+// event. Observe it one level earlier so changing modes swaps the visible portion
+// of the selected preset without destroying its saved 10-ban list.
+document.addEventListener('click',e=>{
+  const toggle=e.target.closest?.('[data-experimental-bans]');
+  if(toggle){
+    BAN_PRESET_syncFromState();BAN_PRESET_persist();BAN_PRESET_skipSync=true;
+    queueMicrotask(()=>{
+      BAN_PRESET_skipSync=false;BAN_PRESET_apply();BAN_PRESET_invalidate();save();render();
+    });
+    return;
+  }
+  const clear=e.target.closest?.('[data-bclear]');
+  if(clear){
+    e.preventDefault();e.stopImmediatePropagation();
+    state.banPresets[state.activeBanPreset]={bans:[],normalCount:0};state.bans=[];state.banQuery='';BAN_PRESET_invalidate();save();render();
+  }
+},true);
+
+const BAN_PRESET_style=document.createElement('style');
+BAN_PRESET_style.textContent=`
+.tower-ban-presets{display:grid;gap:7px;margin:0 0 10px;padding:0 0 9px;border-bottom:1px solid var(--line-inner,rgba(255,255,255,.08))}
+.tower-ban-presets .depth-ban-layout-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.tower-ban-presets .depth-ban-layout-tabs button{min-width:0;border:1px solid var(--line-soft,#2b3949);background:var(--surface-3,#171e27);color:#8290a1;border-radius:8px;padding:7px 5px;cursor:pointer}
+.tower-ban-presets .depth-ban-layout-tabs button span{display:block;font-size:8px;font-weight:800}
+.tower-ban-presets .depth-ban-layout-tabs button small{display:block;color:#627184;font-size:7px;margin-top:2px}
+.tower-ban-presets .depth-ban-layout-tabs button.on{border-color:var(--accent-line,#5b8790);background:var(--accent-soft,rgba(90,135,145,.12));color:var(--accent-text-strong,#d5e4e7)}
+.tower-ban-presets .depth-ban-layout-tabs button.on small{color:var(--accent,#7eb4bd)}
+.tower-ban-presets .depth-ban-layout-actions{display:flex;gap:5px;justify-content:flex-end}
+.tower-ban-presets .depth-ban-layout-actions button{border:1px solid var(--line-soft,#2b3949);background:var(--surface-2,#1b232d);color:#8b99aa;border-radius:7px;padding:5px 7px;font-size:8px;cursor:pointer}
+.tower-ban-presets .depth-ban-layout-actions button:hover{border-color:var(--accent-line,#5b8790);color:var(--accent-text-strong,#d5e4e7)}
+@media(max-width:560px){.tower-ban-presets .depth-ban-layout-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.tower-ban-presets .depth-ban-layout-tabs button{min-height:42px}.tower-ban-presets .depth-ban-layout-actions{display:grid;grid-template-columns:1fr 1fr}.tower-ban-presets .depth-ban-layout-actions button{min-height:38px;font-size:9px}}
+`;
+document.head.appendChild(BAN_PRESET_style);
