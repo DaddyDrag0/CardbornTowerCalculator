@@ -4,8 +4,8 @@
 // automatically fall back to a direct page-owned child-worker pool.
 
 const COORDINATOR_MAX_WORKERS=8;
-const COORDINATOR_URL='./sim-coordinator.js?v=38';
-const DIRECT_CHILD_URL='./sim-child-exp.js?v=38';
+const COORDINATOR_URL='./sim-coordinator.js?v=46';
+const DIRECT_CHILD_URL='./sim-child-exp.js?v=46';
 
 function COORDINATOR_runTeam(payload,onProgress){
   return new Promise((resolve,reject)=>{
