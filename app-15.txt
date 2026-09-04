@@ -1,0 +1,61 @@
+// Global Corrupted ability selector. The game allows exactly one equipped ability
+// at a time; that one ability applies to every Corrupted card on every player team.
+const CORRUPTED_OPTIONS=window.CARDBORN_CORRUPTED_ABILITIES||[];
+const CORRUPTED_BY_ID=new Map(CORRUPTED_OPTIONS.map(x=>[x.id,x]));
+const CORRUPTED_STORE='cardborn-corrupted-selection-v1';
+state.corruptedAbility='';
+state.corruptedTier=4;
+
+const CORRUPTED_baseLoad=load;
+load=function(){
+  CORRUPTED_baseLoad();
+  try{
+    const saved=JSON.parse(localStorage.getItem(CORRUPTED_STORE)||'null');
+    const id=String(saved?.ability||'');
+    state.corruptedAbility=CORRUPTED_BY_ID.has(id)?id:'';
+    const tier=Number(saved?.tier);
+    state.corruptedTier=[1,2,3,4].includes(tier)?tier:(CORRUPTED_BY_ID.get(state.corruptedAbility)?.tier||4);
+  }catch(_){state.corruptedAbility='';state.corruptedTier=4}
+};
+
+const CORRUPTED_baseSave=save;
+save=function(){
+  CORRUPTED_baseSave();
+  try{localStorage.setItem(CORRUPTED_STORE,JSON.stringify({ability:state.corruptedAbility||'',tier:state.corruptedTier||4}))}catch(_){}
+};
+
+function CORRUPTED_triggerLabel(v){return v==='StartOfBattle'?'Battle start':v==='OnEntry'?'On entry':v==='PostAttack'?'After attack':'Passive'}
+function CORRUPTED_clearResults(){state.teams.forEach(t=>t.result=null)}
+
+function CORRUPTED_renderMenu(){
+  const body=root.querySelector('.simulation-body');if(!body)return;
+  const bans=body.querySelector('.depth-ban-box');
+  const current=CORRUPTED_BY_ID.get(state.corruptedAbility),tier=Math.max(1,Math.min(4,Number(state.corruptedTier)||4));
+  const list=CORRUPTED_OPTIONS.filter(x=>x.tier===tier);
+  const box=document.createElement('section');
+  box.className='corrupted-ability-box';
+  box.innerHTML=`<div class="corrupted-ability-head"><div><span>CORRUPTED ABILITY</span><small>One equipped ability applies to every Corrupted card.</small></div><button type="button" data-corr-none class="${current?'':'on'}">${current?'Unequip':'None equipped'}</button></div><div class="corrupted-current"><span>ACTIVE</span><b>${current?esc(current.name):'None'}</b>${current?`<small>Tier ${current.tier} · ${esc(CORRUPTED_triggerLabel(current.trigger))}</small>`:'<small>Corrupted cards use border stats only.</small>'}</div><div class="corrupted-tier-tabs">${[1,2,3,4].map(n=>`<button type="button" data-corr-tier="${n}" class="${tier===n?'on':''}">Tier ${n}</button>`).join('')}</div><div class="corrupted-options">${list.map(a=>`<button type="button" data-corr-ability="${esc(a.id)}" class="${state.corruptedAbility===a.id?'on':''}"><span><b>${esc(a.name)}</b><i>${esc(CORRUPTED_triggerLabel(a.trigger))}</i></span><small>${esc(a.description)}</small></button>`).join('')}</div>`;
+  if(bans)body.insertBefore(box,bans);else body.appendChild(box);
+}
+
+const CORRUPTED_baseRender=render;
+render=function(){CORRUPTED_baseRender();CORRUPTED_renderMenu()};
+
+root.addEventListener('click',e=>{
+  const tier=e.target.closest('[data-corr-tier]');
+  if(tier){e.preventDefault();e.stopImmediatePropagation();state.corruptedTier=Math.max(1,Math.min(4,Number(tier.dataset.corrTier)||1));save();render();return}
+  const ability=e.target.closest('[data-corr-ability]');
+  if(ability){e.preventDefault();e.stopImmediatePropagation();const id=String(ability.dataset.corrAbility||'');if(CORRUPTED_BY_ID.has(id)){state.corruptedAbility=id;state.corruptedTier=CORRUPTED_BY_ID.get(id).tier;CORRUPTED_clearResults();save();render()}return}
+  const none=e.target.closest('[data-corr-none]');
+  if(none){e.preventDefault();e.stopImmediatePropagation();state.corruptedAbility='';CORRUPTED_clearResults();save();render()}
+},true);
+
+// Battle debug/replay must use the same global selection as the parallel workers.
+replayFloor=function(t,seed,floor){
+  const r=rng32(floorSeed(seed,floor)),pt=makePlayer(t),et=makeEnemy(floor,r);
+  return replayBattle(pt,et,r,state.corruptedAbility||'',floor);
+};
+
+const CORRUPTED_style=document.createElement('style');
+CORRUPTED_style.textContent=`.corrupted-ability-box{margin-top:13px;border:1px solid #554061;background:linear-gradient(180deg,#211829,#19141f);border-radius:12px;padding:11px}.corrupted-ability-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.corrupted-ability-head>div>span{display:block;color:#d7b7ef;font-size:9px;font-weight:850;letter-spacing:.1em}.corrupted-ability-head small{display:block;color:#83758e;font-size:8px;line-height:1.4;margin-top:4px}.corrupted-ability-head>button{border:1px solid #684c79;background:#2a1c34;color:#b99aca;border-radius:8px;padding:6px 9px;font-size:8px;font-weight:800;white-space:nowrap}.corrupted-ability-head>button.on{border-color:#4d665f;background:#172620;color:#9bc9b9}.corrupted-current{margin-top:9px;border:1px solid #44344e;background:#17121c;border-radius:9px;padding:8px 9px}.corrupted-current>span{display:block;color:#786a83;font-size:7px;font-weight:850;letter-spacing:.1em}.corrupted-current>b{display:block;color:#eadcf4;font-size:11px;margin-top:3px}.corrupted-current>small{display:block;color:#8f829a;font-size:8px;margin-top:2px}.corrupted-tier-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:9px}.corrupted-tier-tabs button{border:1px solid #493955;background:#1a1420;color:#8d7c99;border-radius:8px;padding:7px 5px;font-size:8px;font-weight:800}.corrupted-tier-tabs button.on{border-color:#8058a0;background:#39234a;color:#e3c9f5}.corrupted-options{display:grid;gap:5px;margin-top:7px}.corrupted-options>button{width:100%;text-align:left;border:1px solid #3d3146;background:#18131d;color:#b7a8c1;border-radius:9px;padding:8px 9px}.corrupted-options>button:hover{border-color:#6d4f80;background:#211729}.corrupted-options>button.on{border-color:#9763b8;background:#30203c;box-shadow:inset 0 0 0 1px rgba(183,121,218,.12)}.corrupted-options>button>span{display:flex;align-items:center;justify-content:space-between;gap:8px}.corrupted-options b{font-size:9px;color:#e0d1ea}.corrupted-options i{font-style:normal;color:#9e7fb2;font-size:7px;white-space:nowrap}.corrupted-options small{display:block;color:#82758b;font-size:8px;line-height:1.4;margin-top:4px}@media(max-width:560px){.corrupted-ability-head{flex-direction:column}.corrupted-ability-head>button{width:100%;min-height:38px}.corrupted-tier-tabs button{min-height:40px;font-size:9px}.corrupted-options>button{min-height:58px;padding:10px}.corrupted-options b{font-size:10px}.corrupted-options small{font-size:9px}}`;
+document.head.appendChild(CORRUPTED_style);
