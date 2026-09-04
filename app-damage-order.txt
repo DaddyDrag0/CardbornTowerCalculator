@@ -1,0 +1,162 @@
+// Damage-reduction ordering correctness.
+// Game-owner confirmation: all applicable damage reductions are applied individually
+// in a random order for each hit. Dodges, blocks/shields, redirects and death-saves
+// remain separate mechanics. The battle RNG drives the shuffle so worker runs and
+// on-demand debug replays stay deterministic from the same seed.
+
+function DRORD_shuffle(list,r){
+  const out=list.slice();
+  for(let i=out.length-1;i>0;i--){
+    const roll=typeof r==='function'?r():Math.random();
+    const j=Math.max(0,Math.min(i,Math.floor(roll*(i+1))));
+    [out[i],out[j]]=[out[j],out[i]];
+  }
+  return out;
+}
+function DRORD_fmt(n){
+  n=Math.max(0,Number(n)||0);
+  try{return typeof compact==='function'?String(compact(n)).toUpperCase():Math.floor(n).toLocaleString('en-US')}catch(_){return String(Math.floor(n))}
+}
+function DRORD_specter(team,ctx){
+  if(typeof SPECTER_activeSource==='function')return SPECTER_activeSource(team,ctx);
+  return FULL_alive(team||[]).find(x=>FULL_enabled(x,ctx)&&x.ability?.name==='Haunting Presence')||null;
+}
+
+incoming=function(t,a,d,r,ctx,ignore=false,meta={}){
+  if(!t||d<=0)return 0;
+  FULL_CONTEXT=ctx;FULL_init(t);FULL_init(a);t._lastReductionTrace=null;
+  const perfect=ignore||a?.ability?.name==='Perfect Strike';
+  let amount=Math.max(0,Math.floor(d));
+
+  // Damage amplification remains outside the reduction shuffle.
+  if((t._ampTaken||0)>0&&!perfect)amount=Math.floor(amount*(1+t._ampTaken));
+  if(t._vorrathAmpSource===a&&!perfect)amount=Math.floor(amount*1.25);
+  if(t._umbralMark?.source===a&&!perfect)amount=Math.floor(amount*(1+t._umbralMark.amp));
+  if(perfect)return amount;
+
+  const enabled=FULL_enabled(t,ctx),n=enabled?t.ability?.name:'';
+
+  // Evasion / complete blocks are not damage reductions.
+  if(n==='Nature’s Guardian'&&!t._natureBlocked){t._natureBlocked=true;if(FULL_fab(t))buff(t,.15);return 0}
+  if(n==='Scurrying Escape'&&r()<(FULL_fab(t)?.35:.20)){heal(t,Math.floor(t.max*(FULL_fab(t)?.15:.10)));return 0}
+  if(n==='Eye of the Storm'&&r()<.35){if(FULL_fab(t))t._eyeNext=1.50;return 0}
+  if(n==='Mind Fracture'&&r()<(FULL_fab(t)?.25:.15))return 0;
+  if(n==='Astral Blessing'&&r()<(FULL_fab(t)?.45:.40)){for(const x of FULL_alive(FULL_team(t,ctx))){buff(x,FULL_fab(t)?.15:.10);if(FULL_fab(t))heal(x,Math.floor(x.max*.05))}return 0}
+  if(n==='Royal Decree: Silence'){
+    const chance=Math.min(FULL_fab(t)?.75:.60,(FULL_fab(t)?.35:.30)+(t._royalHits||0)*.10);
+    if(r()<chance){if(FULL_fab(t))t.atk=Math.floor(t.atk*1.15);return 0}
+  }
+  if(t._bonusDodge&&r()<t._bonusDodge)return 0;
+
+  const effects=[];
+  const add=(name,apply)=>effects.push({name,apply});
+  const team=FULL_team(t,ctx)||[];
+
+  // Team-based reduction sources.
+  const specter=DRORD_specter(team,ctx);
+  if(specter)add('Haunting Presence',x=>Math.floor(x*(1-(FULL_fab(specter)?.22:.15))));
+  for(const theo of FULL_alive(team).filter(x=>FULL_enabled(x,ctx)&&x.ability?.name==="Heaven's Threshold")){
+    FULL_init(theo);
+    if(!theo._heavenProtected.has(t))add("Heaven's Threshold",x=>{
+      theo._heavenProtected.add(t);
+      const out=Math.floor(x*(1-(FULL_fab(theo)?.60:.45)));
+      buff(theo,FULL_fab(theo)?.18:.12);
+      return out;
+    });
+  }
+
+  // Defender's visible ability reductions.
+  if(n==='Resilience'&&t.hp/t.max>(FULL_fab(t)?.20:.40))add('Resilience',x=>Math.floor(x*(1-(FULL_fab(t)?.25:.15))));
+  if(n==='Seasoned Veteran')add('Seasoned Veteran',x=>Math.min(x,Math.floor(t.max*(FULL_fab(t)?.30:.35))));
+  if(n==='Between Worlds'){
+    t._betweenHit=(t._betweenHit||0)+1;
+    if(t._betweenHit%2===0)add('Between Worlds',x=>Math.floor(x*.30));
+  }
+  if(n==='Arcane Cataclysm')add('Arcane Cataclysm',x=>{
+    const q=t._arcaneThreshold||.25,th=Math.floor(t.max*q);
+    if(x<th)return 0;
+    t._arcaneThreshold=Math.min(.50,q+.05);
+    return Math.max(0,x-th);
+  });
+  if(n==='Slip Between Shadows')add('Slip Between Shadows',x=>{
+    const lo=FULL_fab(t)?.30:.40,hi=FULL_fab(t)?.65:.75,factor=lo+r()*(hi-lo);
+    const out=Math.floor(x*factor);
+    if(factor<=(FULL_fab(t)?.40:.45))FULL_stun(a,1);
+    return out;
+  });
+  if(n==='Inverse Law')add('Inverse Law',x=>{
+    const cut=Math.min(x,Math.floor(t.atk*(FULL_fab(t)?.40:.30)));
+    if(FULL_fab(t)&&cut)t.atk+=Math.floor(cut*.15);
+    return x-cut;
+  });
+  if(n==='Crushing Cold'&&a&&rarity(a.card,a.flags)<rarity(t.card,t.flags))add('Crushing Cold',x=>Math.floor(x*(1-(FULL_fab(t)?.35:.20))));
+  if(n==='Strut & Strike'&&t._henReduce)add('Strut & Strike',x=>{const out=Math.floor(x*(1-t._henReduce));t._henReduce=0;return out});
+  if(n==='Cocooned Protection'&&t._cocoonTurns>0)add('Cocooned Protection',x=>{const prevented=Math.floor(x*.40);t._cocoonAbsorbed=(t._cocoonAbsorbed||0)+prevented;return x-prevented});
+
+  // Persistent/generic DR accumulated by abilities such as Tip the Guard,
+  // Arachnid Dominion, Amethyst Armor and Flow State.
+  const genericDr=clamp(t.dr||0,0,.90);
+  if(genericDr>0)add('Damage Reduction',x=>Math.floor(x*(1-genericDr)));
+
+  // Corrupted defensive abilities are reductions too and participate in the same shuffle.
+  const corr=t?.flags?.corrupted&&typeof CORRUPTED_selected==='function'?CORRUPTED_selected(t.corr):'';
+  if(corr==='BlightedSkin')add('Blighted Skin',x=>Math.floor(x*((a&&a.atk>t.atk)?.85:.90)));
+  if(corr==='UnholyResolve'&&t.hp<=t.max*.50)add('Unholy Resolve',x=>Math.floor(x*.80));
+  if(corr==='VoidArmor'&&!t._voidArmorUsed)add('Void Armor',x=>{t._voidArmorUsed=true;return Math.floor(x*.40)});
+
+  const reductionStart=amount,steps=[];
+  for(const effect of DRORD_shuffle(effects,r)){
+    if(amount<=0)break;
+    const before=amount;
+    amount=Math.max(0,Math.floor(effect.apply(amount)));
+    if(amount!==before)steps.push({name:effect.name,before,after:amount});
+  }
+  if(steps.length)t._lastReductionTrace={raw:reductionStart,final:amount,steps};
+
+  // Conditional negations, reflects, redirects and death-saves use the damage left
+  // after the shuffled reductions. These are intentionally not part of the DR shuffle.
+  if(enabled){
+    if(n==='Grace of the Divine'&&amount<t.max*(FULL_fab(t)?.35:.25)){heal(t,Math.floor(amount*(FULL_fab(t)?1.25:1)));return 0}
+    if(n==='Frozen Guard'&&amount>0&&r()<(FULL_fab(t)?.55:.40))FULL_freeze(a,FULL_fab(t)?2:1);
+    if(n==='Endless Winter'&&amount>=t.hp&&!t._winterSaved){t._winterSaved=true;heal(t,amount);if(FULL_fab(t))FULL_freeze(a,2);return 0}
+    if(n==='Moment of Impact'&&amount>=t.hp&&!t._impactSaved){t._impactSaved=true;FULL_stun(a,1);if(FULL_fab(t))t._impactHeal=true;return Math.max(0,t.hp-1)}
+    if(n==='Refraction'&&amount>0){const reflected=Math.floor(amount*.30);FULL_effectDamage(t,a,reflected,r,ctx,true,{reflect:true});if(FULL_fab(t))heal(t,Math.floor(reflected*.60))}
+    if(n==='Fate Reversal'&&t._fateReady&&amount>0){t._fateReady=false;const ref=Math.floor(amount*(FULL_fab(t)?.60:.35));const res=FULL_effectDamage(t,a,ref,r,ctx,true,{reflect:true});if(res.killed)heal(t,Math.floor(t.max*(FULL_fab(t)?.75:.50)));return 0}
+    if(n==='Puppet Strings'){
+      const uses=FULL_fab(t)?2:1;t._puppetUses=t._puppetUses||0;
+      if(t._puppetUses<uses&&amount>=t.hp){const ally=FULL_lowest(FULL_team(a,ctx),a);if(ally){t._puppetUses++;FULL_effectDamage(a,ally,Math.floor(amount*(FULL_fab(t)?1.25:1)),r,ctx,false,{redirect:true});return 0}}
+    }
+    if(n==='Tip the Guard'&&FULL_fab(t)&&amount>=t.hp&&!t._tipSaved){t._tipSaved=true;return Math.max(0,t.hp-1)}
+  }
+
+  // HP shields and one-hit blocks remain separate from reduction ordering.
+  if(t.shieldHp>0){
+    const before=t.shieldHp,q=Math.min(t.shieldHp,amount);t.shieldHp-=q;amount-=q;
+    if(before>0&&t.shieldHp<=0&&t._solarBurnPct&&a)FULL_effectDamage(t,a,Math.floor(a.max*t._solarBurnPct),r,ctx,true,{burn:true});
+    if(amount<=0)return 0;
+  }
+  if(t.shields>0){t.shields--;return 0}
+
+  // Plague Bearer is a threshold trigger, not a damage reduction.
+  if(corr==='PlagueBearer'&&amount>0){
+    const remaining=t.hp-amount;
+    if(remaining>0&&remaining<=t.max*.35&&!t._plagueBearerTriggered){t._plagueBearerTriggered=true;t.atk+=Math.max(1,CORRUPTED_round(t.atk*.10))}
+  }
+
+  return Math.max(0,amount);
+};
+
+// Add the actual shuffled order to debug defense events. This is debug-only and
+// does not alter combat; the human-readable logger later turns it into normal text.
+if(typeof FULL_logAbility==='function'){
+  const DRORD_baseLogAbility=FULL_logAbility;
+  FULL_logAbility=function(events,turn,f,phase,before,pt,et,extra=[]){
+    let nextExtra=extra;
+    if(phase==='Defense interaction'&&f?._lastReductionTrace?.steps?.length){
+      const trace=f._lastReductionTrace;
+      const chain=trace.steps.map(s=>`${s.name} ${DRORD_fmt(s.before)}→${DRORD_fmt(s.after)}`).join(' > ');
+      nextExtra=[...extra,`Reduction order: ${chain}`];
+    }
+    return DRORD_baseLogAbility(events,turn,f,phase,before,pt,et,nextExtra);
+  };
+}
