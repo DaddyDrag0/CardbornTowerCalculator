@@ -1,0 +1,33 @@
+// Specter / Haunting Presence non-stacking rule.
+// Only one living Specter per team may provide Haunting Presence at a time.
+// The first living Specter in deck order is the active source; if it dies,
+// the next living Specter takes over. This applies to both healing and damage reduction.
+
+function SPECTER_activeSource(team,ctx=FULL_CONTEXT){
+  return FULL_alive(team||[]).find(x=>FULL_enabled(x,ctx)&&x.ability?.name==='Haunting Presence')||null;
+}
+
+FULL_specterAuras=function(teams){
+  for(const team of teams||[]){
+    const s=SPECTER_activeSource(team,FULL_CONTEXT);
+    if(!s)continue;
+    const pct=FULL_fab(s)?.08:.05;
+    for(const x of FULL_alive(team))heal(x,Math.floor(x.max*pct));
+  }
+};
+
+const SPECTER_baseIncoming=incoming;
+incoming=function(t,a,d,r,ctx,ignore=false,meta={}){
+  const team=FULL_team(t,ctx)||[];
+  const active=SPECTER_activeSource(team,ctx);
+  const hidden=[];
+  if(active){
+    for(const s of FULL_alive(team)){
+      if(s===active||s.ability?.name!=='Haunting Presence'||!FULL_enabled(s,ctx))continue;
+      hidden.push([s,s.ability]);
+      s.ability={...(s.ability||{}),name:'Haunting Presence (inactive duplicate)'};
+    }
+  }
+  try{return SPECTER_baseIncoming(t,a,d,r,ctx,ignore,meta)}
+  finally{for(const [s,ability] of hidden)s.ability=ability}
+};
