@@ -1,0 +1,22 @@
+window.CARDBORN_CORRUPTED_ABILITIES=[
+{id:'CorruptedVigor',name:'Corrupted Vigor',tier:1,trigger:'StartOfBattle',cost:25,description:'Corrupted cards gain +12% max health.'},
+{id:'CorruptedMight',name:'Corrupted Might',tier:1,trigger:'StartOfBattle',cost:25,description:'Corrupted cards gain +10% damage.'},
+{id:'CorruptedFortitude',name:'Corrupted Fortitude',tier:1,trigger:'StartOfBattle',cost:35,description:'Corrupted cards gain +8% max health and +4% damage.'},
+{id:'CorruptedFury',name:'Corrupted Fury',tier:1,trigger:'StartOfBattle',cost:35,description:'Corrupted cards gain +4% max health and +8% damage.'},
+{id:'RotTouch',name:'Rot Touch',tier:2,trigger:'PostAttack',cost:60,description:"After attacking, reduce the target's max health by 8% of damage dealt. Better against bulky enemies."},
+{id:'CursedFangs',name:'Cursed Fangs',tier:2,trigger:'PostAttack',cost:70,description:'After attacking, heal for 8% of damage dealt, capped at 15% max health. If below half health, heal for 14% instead.'},
+{id:'BlightedSkin',name:'Blighted Skin',tier:2,trigger:'Passive',cost:75,description:'Corrupted cards take 10% reduced damage. If the attacker has higher damage, reduce damage by 15% instead.'},
+{id:'WitheringStrike',name:'Withering Strike',tier:2,trigger:'OnEntry',cost:80,description:"On entry, reduce the active enemy's damage by 12%. Strong into high-damage enemies."},
+{id:'ChillingTouch',name:'Chilling Touch',tier:2,trigger:'OnEntry',cost:90,description:"On entry, deal damage equal to 6% of the active enemy's current health. Better against healthy enemies."},
+{id:'SoulRipper',name:'Soul Ripper',tier:2,trigger:'StartOfBattle',cost:100,description:'Corrupted cards gain +8% max health and +8% damage.'},
+{id:'DecayingPresence',name:'Decaying Presence',tier:3,trigger:'OnEntry',cost:150,description:'On entry, the active enemy loses 8% current health. If the enemy has more max health than this card, they lose 12% instead.'},
+{id:'CursedRetribution',name:'Cursed Retribution',tier:3,trigger:'OnEntry',cost:175,description:'On entry, gain +12% damage. If the active enemy has higher damage, reduce their damage by 12%.'},
+{id:'UnholyResolve',name:'Unholy Resolve',tier:3,trigger:'Passive',cost:175,description:'When taking damage while below 50% health, reduce that damage by 20%.'},
+{id:'VampiricCorruption',name:'Vampiric Corruption',tier:3,trigger:'PostAttack',cost:175,description:'After attacking, heal for 12% of damage dealt, capped at 15% max health. If this card defeats the enemy, gain a shield equal to 10% max health.'},
+{id:'PlagueBearer',name:'Plague Bearer',tier:3,trigger:'Passive',cost:200,description:'After being attacked, if this card survived below 35% health, gain +10% damage.'},
+{id:'EternalRot',name:'Eternal Rot',tier:4,trigger:'PostAttack',cost:300,description:'After attacking, heal for 10% of damage dealt, capped at 15% max health. If the target survived, reduce their damage by 6%.'},
+{id:'CataclysmicEntry',name:'Cataclysmic Entry',tier:4,trigger:'OnEntry',cost:325,description:'On entry, deal 10% current health damage to the active enemy. If the enemy is above 75% health, deal 14% instead.'},
+{id:'VoidArmor',name:'Void Armor',tier:4,trigger:'Passive',cost:350,description:'The first time each corrupted card takes damage, reduce that damage by 60%.'},
+{id:'SoulHarvester',name:'Soul Harvester',tier:4,trigger:'PostAttack',cost:350,description:'After attacking, heal for 10% of max health. If this card defeats an enemy, gain +8% damage and a 12% max health shield.'},
+{id:'ApexCorruption',name:'Apex Corruption',tier:4,trigger:'OnEntry',cost:400,description:'On entry, gain a shield equal to 18% max health. If the active enemy has higher damage, also gain +10% damage.'}
+];
