@@ -1,0 +1,76 @@
+// Battle-log HP presentation.
+// Debug only: attach post-event fighter snapshots and render current/max HP bars
+// anywhere an interaction talks about HP, matching the clearer Depth-style layout.
+
+function HPLOG_snapshotTeams(pt,et){
+  try{return[...(pt||[]),...(et||[])].map(dbgSnap).filter(Boolean)}catch(_){return[]}
+}
+
+const HPLOG_baseLogAbility=FULL_logAbility;
+FULL_logAbility=function(events,turn,f,phase,before,pt,et,extra=[]){
+  const start=events?.length||0,result=HPLOG_baseLogAbility(events,turn,f,phase,before,pt,et,extra);
+  if(events&&events.length>start){
+    const states=HPLOG_snapshotTeams(pt,et);
+    for(let i=start;i<events.length;i++)if(events[i]&&!events[i].hpStates)events[i].hpStates=states;
+  }
+  return result;
+};
+
+const HPLOG_baseLogEvent=FULL_logEvent;
+FULL_logEvent=function(events,event){
+  if(event&&events&&!event.hpStates){
+    const all=FULL_CONTEXT?.all||[];
+    event={...event,hpStates:HPLOG_snapshotTeams(all[0]||[],all[1]||[])};
+  }
+  return HPLOG_baseLogEvent(events,event);
+};
+
+function HPLOG_barHtml(s){
+  if(!s)return'';
+  const hp=Math.max(0,Number(s.hp)||0),max=Math.max(1,Number(s.maxHp)||1),pct=Math.max(0,Math.min(100,hp/max*100));
+  const kind=s.team==='Allies'?'player':'enemy';
+  return`<div class="dbg-event-hp ${kind}"><div><b>${esc(s.name||'Card')}</b><span>${compact(hp)} / ${compact(max)} HP</span></div><i><em style="width:${pct}%"></em></i></div>`;
+}
+function HPLOG_decorate(dialog,debug){
+  if(!dialog||!debug)return;
+  const visibleTypes=new Set(['ability','death','revive','spawn','stall']);
+  const events=(debug.events||[]).filter(e=>e.type!=='turn'&&visibleTypes.has(e.type));
+  const rows=[...dialog.querySelectorAll('.dbg-interaction')];
+  rows.forEach((row,i)=>{
+    const e=events[i];if(!e||!e.hpStates||!/\bHP\b/i.test(String(e.detail||'')))return;
+    const text=`${e.card||''} ${e.detail||''}`.toLowerCase(),picked=[];
+    for(const s of e.hpStates){
+      const name=String(s?.name||'');if(!name)continue;
+      if((name===e.card||text.includes(name.toLowerCase()))&&!picked.some(x=>x.name===name&&x.team===s.team))picked.push(s);
+    }
+    if(!picked.length){const own=e.hpStates.find(s=>s?.name===e.card);if(own)picked.push(own)}
+    if(!picked.length)return;
+    const wrap=document.createElement('div');wrap.className='dbg-event-hp-list';wrap.innerHTML=picked.slice(0,4).map(HPLOG_barHtml).join('');row.appendChild(wrap);
+  });
+}
+
+const HPLOG_baseShowRunDebug=showRunDebug;
+showRunDebug=function(teamIndex,runIndex){
+  const result=HPLOG_baseShowRunDebug(teamIndex,runIndex);
+  try{
+    const dialogs=[...document.querySelectorAll('dialog.battle-debug')],dialog=dialogs[dialogs.length-1];
+    const debug=state.teams[teamIndex]?.result?.runs?.[runIndex]?.debug;
+    HPLOG_decorate(dialog,debug);
+  }catch(err){console.warn('HP log decoration failed',err)}
+  return result;
+};
+
+const HPLOG_style=document.createElement('style');
+HPLOG_style.textContent=`
+.dbg-fighter-top span,.dbg-fighter-atk{text-transform:uppercase}
+.dbg-event-hp-list{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:7px}
+.dbg-event-hp{min-width:0;border:1px solid rgba(255,255,255,.08);background:#111820;border-radius:8px;padding:7px 9px}
+.dbg-event-hp>div{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.dbg-event-hp b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dce6ee;font-size:8px}
+.dbg-event-hp span{flex:0 0 auto;color:#8a99a8;font-size:7px;text-transform:uppercase}
+.dbg-event-hp>i{display:block;height:5px;border-radius:99px;background:#202a34;overflow:hidden}
+.dbg-event-hp>i>em{display:block;height:100%;border-radius:inherit;background:#74ad9a}
+.dbg-event-hp.enemy>i>em{background:#b76f7b}
+@media(max-width:620px){.dbg-event-hp-list{grid-template-columns:1fr}.dbg-event-hp>div{align-items:flex-start;flex-direction:column;gap:3px}.dbg-event-hp span{font-size:8px}}
+`;
+document.head.appendChild(HPLOG_style);
