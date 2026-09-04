@@ -1,7 +1,6 @@
-// Depth-style detailed battle ability tracing.
-// Debug only: this does not change combat results. It expands the battle snapshot
-// and enriches each ability event with the real ability text plus the exact
-// before -> after result observed in the simulation.
+// Depth-style effect-first battle tracing.
+// Debug only: this does not change combat results. Ability log entries show what
+// actually happened in that battle instead of explaining the ability description.
 
 const ABILITY_TRACE_baseDbgSnap=dbgSnap;
 dbgSnap=function(f){
@@ -9,7 +8,6 @@ dbgSnap=function(f){
   if(!s||!f)return s;
   return{
     ...s,
-    abilityDesc:String(f.ability?.desc||''),
     dr:Number(f.dr)||0,
     next:Number.isFinite(Number(f.next))?Number(f.next):1,
     attacks:Math.max(0,Math.floor(Number(f.attacks)||0)),
@@ -32,17 +30,17 @@ unitDiff=function(a,b,label){
   if(!a||!b)return out;
   const pct=n=>`${Math.round((Number(n)||0)*1000)/10}%`;
   const mult=n=>`x${Math.round((Number(n)||0)*100)/100}`;
-  if(a.ability!==b.ability)out.push(`${tag}ability ${a.ability||'none'} -> ${b.ability||'none'}`);
-  if(Math.abs((Number(a.dr)||0)-(Number(b.dr)||0))>1e-9)out.push(`${tag}damage reduction ${pct(a.dr)} -> ${pct(b.dr)}`);
-  if(Math.abs((Number(a.next)||1)-(Number(b.next)||1))>1e-9)out.push(`${tag}next-hit multiplier ${mult(a.next)} -> ${mult(b.next)}`);
-  if(a.attacks!==b.attacks)out.push(`${tag}attacks ${a.attacks} -> ${b.attacks}`);
-  if(a.revives!==b.revives)out.push(`${tag}revive counter ${a.revives} -> ${b.revives}`);
-  if(a.stored!==b.stored)out.push(`${tag}stored power ${compact(a.stored)} -> ${compact(b.stored)}`);
+  if(a.ability!==b.ability)out.push(`${tag}ability ${a.ability||'none'} → ${b.ability||'none'}`);
+  if(Math.abs((Number(a.dr)||0)-(Number(b.dr)||0))>1e-9)out.push(`${tag}damage reduction ${pct(a.dr)} → ${pct(b.dr)}`);
+  if(Math.abs((Number(a.next)||1)-(Number(b.next)||1))>1e-9)out.push(`${tag}next-hit multiplier ${mult(a.next)} → ${mult(b.next)}`);
+  if(a.attacks!==b.attacks)out.push(`${tag}attacks ${a.attacks} → ${b.attacks}`);
+  if(a.revives!==b.revives)out.push(`${tag}revive counter ${a.revives} → ${b.revives}`);
+  if(a.stored!==b.stored)out.push(`${tag}stored power ${compact(a.stored)} → ${compact(b.stored)}`);
   if(a.silenced!==b.silenced)out.push(`${tag}${b.silenced?'silenced':'silence removed'}`);
   if(a.marked!==b.marked)out.push(`${tag}${b.marked?'marked':'mark removed'}`);
-  if(Math.abs((Number(a.vulnerability)||0)-(Number(b.vulnerability)||0))>1e-9)out.push(`${tag}vulnerability ${pct(a.vulnerability)} -> ${pct(b.vulnerability)}`);
-  if(a.vulnerabilityTurns!==b.vulnerabilityTurns)out.push(`${tag}vulnerability turns ${a.vulnerabilityTurns} -> ${b.vulnerabilityTurns}`);
-  if(a.restoreTurns!==b.restoreTurns)out.push(`${tag}restore timer ${a.restoreTurns} -> ${b.restoreTurns}`);
+  if(Math.abs((Number(a.vulnerability)||0)-(Number(b.vulnerability)||0))>1e-9)out.push(`${tag}vulnerability ${pct(a.vulnerability)} → ${pct(b.vulnerability)}`);
+  if(a.vulnerabilityTurns!==b.vulnerabilityTurns)out.push(`${tag}vulnerability turns ${a.vulnerabilityTurns} → ${b.vulnerabilityTurns}`);
+  if(a.restoreTurns!==b.restoreTurns)out.push(`${tag}restore timer ${a.restoreTurns} → ${b.restoreTurns}`);
   if(!a.voidArmorUsed&&b.voidArmorUsed)out.push(`${tag}Void Armor first-hit protection consumed`);
   if(!a.plagueBearerTriggered&&b.plagueBearerTriggered)out.push(`${tag}Plague Bearer threshold triggered`);
   return out;
@@ -66,30 +64,20 @@ function ABILITY_TRACE_resultText(detail,source,phase){
   for(const pfx of prefixes)if(s.startsWith(pfx)){s=s.slice(pfx.length);break}
   s=s.replace(/^\s*·\s*/,'');
   if(source?.ability?.name==='Haunting Presence')s=s.replace(/^.*?passive aura\s*·\s*Start of turn\s*·\s*/i,'');
-  return s||'Triggered; no direct HP/ATK/status change was recorded.';
+  return s||'Triggered; no direct stat or status change.';
 }
-function ABILITY_TRACE_abilityText(f){
-  if(!f)return'';
-  const name=ABILITY_TRACE_clean(f.ability?.name||'Ability'),desc=ABILITY_TRACE_clean(f.ability?.desc||'');
-  return desc?`${name}: ${desc}`:name;
-}
-function ABILITY_TRACE_corruptedText(f){
+function ABILITY_TRACE_corruptedName(f){
   if(!f?.flags?.corrupted)return'';
   const c=ABILITY_TRACE_CORRUPTED.get(String(f.corr||''));
-  if(!c)return'';
-  const name=ABILITY_TRACE_clean(c.name||c.id||'Corrupted ability'),desc=ABILITY_TRACE_clean(c.desc||c.description||'');
-  return desc?`${name}: ${desc}`:name;
+  return ABILITY_TRACE_clean(c?.name||c?.id||'');
 }
-function ABILITY_TRACE_startText(f){
-  const own=FULL_team(f,FULL_CONTEXT)||[],parts=[];
+function ABILITY_TRACE_startNames(f){
+  const own=FULL_team(f,FULL_CONTEXT)||[],names=[];
   for(const x of FULL_alive(own)){
-    if(typeof START_ABILITIES!=='undefined'&&START_ABILITIES.has(x.ability?.name))parts.push(`${x.card?.name||'Card'} — ${ABILITY_TRACE_abilityText(x)}`);
+    if(typeof START_ABILITIES!=='undefined'&&START_ABILITIES.has(x.ability?.name)&&!names.includes(x.ability.name))names.push(x.ability.name);
   }
-  const corrSeen=new Set();
-  for(const x of own){
-    const text=ABILITY_TRACE_corruptedText(x);if(text&&!corrSeen.has(text)){corrSeen.add(text);parts.push(`Corrupted — ${text}`)}
-  }
-  return parts.length?parts.join(' | '):'No named battle-start ability was detected.';
+  for(const x of own){const c=ABILITY_TRACE_corruptedName(x);if(c&&!names.includes(c))names.push(c)}
+  return names;
 }
 
 const ABILITY_TRACE_baseLogAbility=FULL_logAbility;
@@ -99,19 +87,24 @@ FULL_logAbility=function(events,turn,f,phase,before,pt,et,extra=[]){
   for(let i=start;i<events.length;i++){
     const event=events[i];if(!event||event.type!=='ability')continue;
     try{Object.defineProperty(event,'_abilityTraceDetailed',{value:true,enumerable:false})}catch(_){}
+
     if(event.card==='Battle Start'){
-      const result=ABILITY_TRACE_resultText(event.detail,f,'Battle start');
-      event.detail=`Battle start · Active abilities: ${ABILITY_TRACE_startText(f)} · Actual result: ${result}`;
+      const result=ABILITY_TRACE_resultText(event.detail,f,'Battle start'),names=ABILITY_TRACE_startNames(f);
+      event.detail=`${names.length?names.join(' + '):'Battle start effects'} · ${result}`;
       continue;
     }
-    const source=ABILITY_TRACE_findSource(event,f,pt,et),abilityText=ABILITY_TRACE_abilityText(source),result=ABILITY_TRACE_resultText(event.detail,source,phase);
+
+    const source=ABILITY_TRACE_findSource(event,f,pt,et),result=ABILITY_TRACE_resultText(event.detail,source,phase);
+
+    // Generic incoming-damage changes can come from shields, passives, border effects,
+    // or several stacked modifiers. Show the exact effect without falsely naming one.
     if(phase==='Defense interaction'){
-      const corr=ABILITY_TRACE_corruptedText(source),context=[abilityText&&`Defender ability: ${abilityText}`,corr&&`Corrupted: ${corr}`].filter(Boolean).join(' · ');
-      event.detail=`Defense interaction${context?' · '+context:''} · Actual result: ${result}`;
+      event.detail=`Defense interaction · ${result}`;
       continue;
     }
-    const corr=phase==='On entry'?ABILITY_TRACE_corruptedText(source):'';
-    event.detail=`${source?.ability?.name||event.card||'Ability'} · ${phase}${abilityText?' · What it does: '+abilityText:''}${corr?' · Corrupted effect: '+corr:''} · Actual result: ${result}`;
+
+    const abilityName=ABILITY_TRACE_clean(source?.ability?.name||event.card||'Ability'),corrName=phase==='On entry'?ABILITY_TRACE_corruptedName(source):'';
+    event.detail=`${abilityName}${corrName?` + ${corrName}`:''} · ${result}`;
   }
   return out;
 };
