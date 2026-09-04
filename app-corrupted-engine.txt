@@ -35,12 +35,12 @@ corrEntry=function(f,t,r,ctx){
   }else if(id==='ChillingTouch'&&t&&!t.dead&&t.hp>0){
     damage(f,t,Math.max(1,CORRUPTED_round(t.hp*.06)),r,ctx,true);
   }else if(id==='DecayingPresence'&&t&&!t.dead&&t.hp>0){
-    const pct=t.max>f.max?.12:.08;damage(f,t,Math.max(1,CORRUPTED_round(t.hp*pct)),r,ctx,true);
+    const pct=t.max>f.max?0.12:0.08;damage(f,t,Math.max(1,CORRUPTED_round(t.hp*pct)),r,ctx,true);
   }else if(id==='CursedRetribution'){
     f.atk+=Math.max(1,CORRUPTED_round(f.atk*.12));
     if(t&&!t.dead&&t.hp>0&&t.atk>f.atk)t.atk=Math.max(1,t.atk-Math.max(1,CORRUPTED_round(t.atk*.12)));
   }else if(id==='CataclysmicEntry'&&t&&!t.dead&&t.hp>0){
-    const pct=t.hp>=t.max*.75?.14:.10;damage(f,t,Math.max(1,CORRUPTED_round(t.hp*pct)),r,ctx,true);
+    const pct=t.hp>=t.max*.75?0.14:0.10;damage(f,t,Math.max(1,CORRUPTED_round(t.hp*pct)),r,ctx,true);
   }else if(id==='ApexCorruption'){
     f.shieldHp=(f.shieldHp||0)+Math.max(1,CORRUPTED_round(f.max*.18));
     if(t&&!t.dead&&t.hp>0&&t.atk>f.atk)f.atk+=Math.max(1,CORRUPTED_round(f.atk*.10));
@@ -52,7 +52,7 @@ corrReduce=function(t,a,d){
   if(!t?.flags?.corrupted||d<=0)return d;
   const id=CORRUPTED_selected(t.corr);
   if(id==='BlightedSkin'){
-    return Math.max(0,Math.floor(d*(a&&a.atk>t.atk?.85:.90)));
+    return Math.max(0,Math.floor(d*((a&&a.atk>t.atk)?0.85:0.90)));
   }
   if(id==='UnholyResolve'){
     if(t.hp<=t.max*.50)return Math.max(0,Math.floor(d*.80));
@@ -79,7 +79,7 @@ corrPost=function(f,t,dealt,killed){
   if(id==='RotTouch'){
     if(t&&!t.dead&&t.hp>0&&real>0){const cut=Math.max(1,CORRUPTED_round(real*.08));t.max=Math.max(1,t.max-cut);t.hp=Math.min(t.hp,t.max)}
   }else if(id==='CursedFangs'){
-    if(real>0){const pct=f.hp<=max*.5?.14:.08,cap=Math.max(1,CORRUPTED_round(max*.15)),amount=Math.min(Math.max(1,CORRUPTED_round(real*pct)),cap);heal(f,amount)}
+    if(real>0){const pct=f.hp<=max*.5?0.14:0.08,cap=Math.max(1,CORRUPTED_round(max*.15)),amount=Math.min(Math.max(1,CORRUPTED_round(real*pct)),cap);heal(f,amount)}
   }else if(id==='VampiricCorruption'){
     if(real>0){const cap=Math.max(1,CORRUPTED_round(max*.15)),amount=Math.min(Math.max(1,CORRUPTED_round(real*.12)),cap);heal(f,amount);if(killed)f.shieldHp=(f.shieldHp||0)+Math.max(1,CORRUPTED_round(max*.10))}
   }else if(id==='EternalRot'){
