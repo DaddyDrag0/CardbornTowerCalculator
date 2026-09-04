@@ -1,0 +1,46 @@
+// Cosmic Dragon / Starfall Barrage correctness.
+// Confirmed rule: every enemy Cosmic Dragon personally defeats grants +30% ATK,
+// additive from one fixed baseline. Kills can come from Starfall or normal attacks.
+// This removes the old Starfall-entry double count and all compounding growth.
+
+function COSMIC_addKillGrowth(k){
+  if(!k||k.ability?.name!=='Starfall Barrage')return;
+  if(!Number.isFinite(Number(k._starfallBaseAtk)))k._starfallBaseAtk=Math.max(1,Math.floor(Number(k.atk)||1));
+  k._starfallKillCount=Math.max(0,Math.floor(Number(k._starfallKillCount)||0))+1;
+  k.atk+=Math.max(1,Math.floor(k._starfallBaseAtk*.30));
+}
+
+const COSMIC_baseDie=die;
+die=function(f,k,team,foes,r,ctx){
+  if(!k||k.ability?.name!=='Starfall Barrage')return COSMIC_baseDie(f,k,team,foes,r,ctx);
+  // The old death handler multiplies Starfall Barrage by 1.30 on every kill.
+  // Hide the ability name only while resolving the death, then apply our fixed
+  // additive +30% once if the enemy actually died (revives do not count as kills).
+  const savedAbility=k.ability;
+  k.ability={...(savedAbility||{}),name:'Starfall Barrage (growth handled)'};
+  const died=COSMIC_baseDie(f,k,team,foes,r,ctx);
+  k.ability=savedAbility;
+  if(died)COSMIC_addKillGrowth(k);
+  return died;
+};
+
+const COSMIC_baseEnter=enter;
+enter=function(f,t,own,foes,r,ctx){
+  if(!f||f.ability?.name!=='Starfall Barrage')return COSMIC_baseEnter(f,t,own,foes,r,ctx);
+
+  // Reproduce the normal entry prologue, then run Starfall without the old
+  // post-loop compounding bonus. die() above handles every actual kill exactly once.
+  FULL_CONTEXT=ctx;
+  FULL_initTeams(own,foes);
+  FULL_init(f);
+  corrEntry(f,t,r,ctx);
+  FULL_applyOpponentEntryAuras(f,foes,r,ctx);
+  if(!FULL_enabled(f,ctx))return;
+
+  // Lock the additive baseline after entry-time auras/corrupted effects have applied.
+  if(!Number.isFinite(Number(f._starfallBaseAtk)))f._starfallBaseAtk=Math.max(1,Math.floor(Number(f.atk)||1));
+
+  for(const x of [...FULL_alive(foes)]){
+    FULL_effectDamage(f,x,Math.floor(f.atk*.15),r,ctx,true,{aoe:true});
+  }
+};
