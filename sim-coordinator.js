@@ -3,7 +3,7 @@
 // the next queued run to whichever child finishes first.
 
 const MAX_WORKERS=8;
-const CHILD_URL='./sim-child-exp.js?v=47';
+const CHILD_URL='./sim-child-exp.js?v=48';
 
 self.onmessage=e=>{
   const req=e.data||{};
