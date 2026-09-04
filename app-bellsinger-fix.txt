@@ -1,0 +1,11 @@
+// Hollow Bellsinger correctness.
+// Melodic Revival is an additional turn effect (revive/explosion), not a replacement
+// for Hollow Bellsinger's normal attack. Freeze/stun are resolved before turnStart.
+const BELLSINGER_baseTurnStart=turnStart;
+turnStart=function(f,t,own,foes,r,ctx){
+  const out=BELLSINGER_baseTurnStart(f,t,own,foes,r,ctx)||{mult:1,attacks:1,target:t};
+  if(f?.ability?.name==='Melodic Revival'&&!f.dead&&f.hp>0){
+    out.attacks=Math.max(1,Math.floor(Number(out.attacks)||0));
+  }
+  return out;
+};
