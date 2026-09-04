@@ -1,0 +1,22 @@
+// On-demand battle debug for worker-generated runs.
+// Bulk workers intentionally omit debug for speed. Clicking a completed run rebuilds
+// only that run's ending floor with the full current battle engine and original seed.
+const DEBUG_baseShowRunDebug=showRunDebug;
+showRunDebug=function(teamIndex,runIndex){
+  const run=state.teams[teamIndex]?.result?.runs?.[runIndex];
+  if(run&&!run.debug){
+    try{
+      const floor=run.death<=state.cap?run.death:run.cleared;
+      const team=state.teams[teamIndex];
+      const r=rng32(floorSeed(run.seed,floor));
+      const pt=makePlayer(team),et=makeEnemy(floor,r);
+      const replay=battle(pt,et,r,state.corruptedAbility||'',true);
+      run.debug=replay?.debug||null;
+      if(run.debug)run.debug.floor=floor;
+    }catch(err){
+      console.error('Failed to rebuild battle debug.',err);
+      run.debug={floor:run.death<=state.cap?run.death:run.cleared,initialAllies:[],initialEnemies:[],events:[{turn:0,type:'stall',team:'System',card:'Debug',detail:'Unable to rebuild this battle log.'}],finalAllies:[],finalEnemies:[]};
+    }
+  }
+  return DEBUG_baseShowRunDebug(teamIndex,runIndex);
+};
