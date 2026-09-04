@@ -1,10 +1,11 @@
-// Depth-style effect-first battle tracing.
-// Debug only: this does not change combat results. Ability log entries show what
-// actually happened in that battle instead of explaining the ability description.
+// Human-readable battle explanation layer.
+// Debug only: combat results are unchanged. This turns raw before/after state
+// changes into plain-English explanations and also traces on-death effects that
+// were previously invisible (for example Raise Dead reviving a fallen ally).
 
-const ABILITY_TRACE_baseDbgSnap=dbgSnap;
+const ABLOG_baseDbgSnap=dbgSnap;
 dbgSnap=function(f){
-  const s=ABILITY_TRACE_baseDbgSnap(f);
+  const s=ABLOG_baseDbgSnap(f);
   if(!s||!f)return s;
   return{
     ...s,
@@ -24,12 +25,13 @@ dbgSnap=function(f){
   };
 };
 
-const ABILITY_TRACE_baseUnitDiff=unitDiff;
+const ABLOG_baseUnitDiff=unitDiff;
 unitDiff=function(a,b,label){
-  const out=ABILITY_TRACE_baseUnitDiff(a,b,label),tag=label?label+' ':'';
+  const out=ABLOG_baseUnitDiff(a,b,label),tag=label?label+' ':'';
   if(!a||!b)return out;
   const pct=n=>`${Math.round((Number(n)||0)*1000)/10}%`;
   const mult=n=>`x${Math.round((Number(n)||0)*100)/100}`;
+  if(a.dead!==b.dead)out.push(`${tag}${b.dead?'defeated':'revived'}`);
   if(a.ability!==b.ability)out.push(`${tag}ability ${a.ability||'none'} → ${b.ability||'none'}`);
   if(Math.abs((Number(a.dr)||0)-(Number(b.dr)||0))>1e-9)out.push(`${tag}damage reduction ${pct(a.dr)} → ${pct(b.dr)}`);
   if(Math.abs((Number(a.next)||1)-(Number(b.next)||1))>1e-9)out.push(`${tag}next-hit multiplier ${mult(a.next)} → ${mult(b.next)}`);
@@ -46,15 +48,33 @@ unitDiff=function(a,b,label){
   return out;
 };
 
-const ABILITY_TRACE_CORRUPTED=new Map((window.CARDBORN_CORRUPTED_ABILITIES||[]).map(x=>[String(x.id||''),x]));
-function ABILITY_TRACE_clean(s){return String(s||'').replace(/\s+/g,' ').trim()}
-function ABILITY_TRACE_findSource(event,f,pt,et){
+const ABLOG_CORRUPTED=new Map((window.CARDBORN_CORRUPTED_ABILITIES||[]).map(x=>[String(x.id||''),x]));
+const ABLOG_clean=s=>String(s||'').replace(/\s+/g,' ').trim();
+const ABLOG_num=s=>{
+  const text=String(s??'').trim().replace(/,/g,''),m=text.match(/^(-?[\d.]+)\s*(Qi|Q|T|B|M|K)?$/i);
+  if(!m)return Number(text);
+  const mult={k:1e3,m:1e6,b:1e9,t:1e12,q:1e15,qi:1e18}[String(m[2]||'').toLowerCase()]||1;
+  return Number(m[1])*mult;
+};
+const ABLOG_fmt=n=>Number.isFinite(Number(n))?compact(Math.max(0,Number(n))):String(n??'?');
+const ABLOG_delta=(a,b)=>Math.abs((Number(b)||0)-(Number(a)||0));
+
+function ABLOG_findSource(event,f,pt,et){
   if(event?.card==='Battle Start')return null;
   const all=[...(pt||[]),...(et||[])],same=all.filter(x=>FULL_teamName(x)===event?.team);
-  return same.find(x=>x.card?.name===event?.card)||same.find(x=>x.ability?.name===event?.card)||all.find(x=>x.card?.name===event?.card)||all.find(x=>x.ability?.name===event?.card)||f||null;
+  return same.find(x=>x.card?.name===event?.card)
+    ||same.find(x=>x.ability?.name===event?.card)
+    ||all.find(x=>x.card?.name===event?.card)
+    ||all.find(x=>x.ability?.name===event?.card)
+    ||f||null;
 }
-function ABILITY_TRACE_resultText(detail,source,phase){
-  let s=ABILITY_TRACE_clean(detail),name=source?.ability?.name||'';
+function ABLOG_corruptedName(f){
+  if(!f?.flags?.corrupted)return'';
+  const c=ABLOG_CORRUPTED.get(String(f.corr||''));
+  return ABLOG_clean(c?.name||c?.id||'');
+}
+function ABLOG_strip(detail,source,phase){
+  let s=ABLOG_clean(detail),name=source?.ability?.name||'';
   const prefixes=[
     `${name} + Corrupted effect · ${phase}`,
     `${name} · ${phase}`,
@@ -64,47 +84,148 @@ function ABILITY_TRACE_resultText(detail,source,phase){
   for(const pfx of prefixes)if(s.startsWith(pfx)){s=s.slice(pfx.length);break}
   s=s.replace(/^\s*·\s*/,'');
   if(source?.ability?.name==='Haunting Presence')s=s.replace(/^.*?passive aura\s*·\s*Start of turn\s*·\s*/i,'');
-  return s||'Triggered; no direct stat or status change.';
+  return s;
 }
-function ABILITY_TRACE_corruptedName(f){
-  if(!f?.flags?.corrupted)return'';
-  const c=ABILITY_TRACE_CORRUPTED.get(String(f.corr||''));
-  return ABILITY_TRACE_clean(c?.name||c?.id||'');
+function ABLOG_parseChange(seg){
+  const m=String(seg).match(/^(.*?)\s+(Max HP|damage reduction|next-hit multiplier|revive counter|stored power|vulnerability turns|restore timer|HP|ATK|shield|blocks|stun|freeze|attacks|vulnerability|ability)\s+(.+?)\s+→\s+(.+)$/);
+  if(!m)return null;
+  return{name:m[1].trim(),field:m[2],old:m[3].trim(),next:m[4].trim(),oldN:ABLOG_num(m[3]),nextN:ABLOG_num(m[4])};
 }
-function ABILITY_TRACE_startNames(f){
-  const own=FULL_team(f,FULL_CONTEXT)||[],names=[];
-  for(const x of FULL_alive(own)){
-    if(typeof START_ABILITIES!=='undefined'&&START_ABILITIES.has(x.ability?.name)&&!names.includes(x.ability.name))names.push(x.ability.name);
+function ABLOG_changeSentence(c,all){
+  const up=Number.isFinite(c.oldN)&&Number.isFinite(c.nextN)&&c.nextN>c.oldN,down=Number.isFinite(c.oldN)&&Number.isFinite(c.nextN)&&c.nextN<c.oldN,delta=ABLOG_delta(c.oldN,c.nextN);
+  const hasMax=all.some(x=>x.name===c.name&&x.field==='Max HP'&&Number.isFinite(x.oldN)&&Number.isFinite(x.nextN)&&x.oldN!==x.nextN);
+  if(c.field==='HP'){
+    if(up){
+      if(c.oldN<=0)return`revived ${c.name} with ${ABLOG_fmt(c.nextN)} HP`;
+      if(hasMax)return`${c.name}'s current HP rose ${ABLOG_fmt(c.oldN)} → ${ABLOG_fmt(c.nextN)}`;
+      if(delta<=1)return`${c.name} was already at full HP`;
+      return`healed ${c.name} for ${ABLOG_fmt(delta)} HP (${ABLOG_fmt(c.oldN)} → ${ABLOG_fmt(c.nextN)})`;
+    }
+    if(down)return`${c.name} lost ${ABLOG_fmt(delta)} HP (${ABLOG_fmt(c.oldN)} → ${ABLOG_fmt(c.nextN)})`;
   }
-  for(const x of own){const c=ABILITY_TRACE_corruptedName(x);if(c&&!names.includes(c))names.push(c)}
+  if(c.field==='Max HP')return`${up?'increased':'reduced'} ${c.name}'s max HP by ${ABLOG_fmt(delta)} (${ABLOG_fmt(c.oldN)} → ${ABLOG_fmt(c.nextN)})`;
+  if(c.field==='ATK')return`${up?'increased':'reduced'} ${c.name}'s ATK by ${ABLOG_fmt(delta)} (${ABLOG_fmt(c.oldN)} → ${ABLOG_fmt(c.nextN)})`;
+  if(c.field==='shield'){
+    if(up&&c.oldN<=0)return`gave ${c.name} a ${ABLOG_fmt(c.nextN)} shield`;
+    if(down&&c.nextN<=0)return`${c.name}'s ${ABLOG_fmt(c.oldN)} shield was fully used`;
+    if(up)return`increased ${c.name}'s shield by ${ABLOG_fmt(delta)} (${ABLOG_fmt(c.oldN)} → ${ABLOG_fmt(c.nextN)})`;
+    if(down)return`${c.name}'s shield absorbed ${ABLOG_fmt(delta)} (${ABLOG_fmt(c.oldN)} → ${ABLOG_fmt(c.nextN)})`;
+  }
+  if(c.field==='blocks')return`${up?'gave':'removed'} ${c.name} ${ABLOG_fmt(delta)} block${delta===1?'':'s'} (${c.old} → ${c.next})`;
+  if(c.field==='stun')return`${up?'stunned':'reduced stun on'} ${c.name} (${c.old} → ${c.next})`;
+  if(c.field==='freeze')return`${up?'froze':'reduced freeze on'} ${c.name} (${c.old} → ${c.next})`;
+  if(c.field==='damage reduction')return`${up?'increased':'reduced'} ${c.name}'s damage reduction (${c.old} → ${c.next})`;
+  if(c.field==='next-hit multiplier')return`changed ${c.name}'s next-hit multiplier ${c.old} → ${c.next}`;
+  if(c.field==='attacks')return`changed ${c.name} to ${c.next} attack${String(c.next)==='1'?'':'s'} this turn`;
+  if(c.field==='revive counter')return`changed ${c.name}'s revive count ${c.old} → ${c.next}`;
+  if(c.field==='stored power')return`${up?'stored':'spent'} ${ABLOG_fmt(delta)} power on ${c.name} (${c.old} → ${c.next})`;
+  if(c.field==='vulnerability')return`changed ${c.name}'s vulnerability ${c.old} → ${c.next}`;
+  if(c.field==='vulnerability turns')return`changed ${c.name}'s vulnerability timer ${c.old} → ${c.next}`;
+  if(c.field==='restore timer')return`changed ${c.name}'s restore timer ${c.old} → ${c.next}`;
+  if(c.field==='ability')return`${c.name}'s ability changed ${c.old} → ${c.next}`;
+  return`${c.name} ${c.field} ${c.old} → ${c.next}`;
+}
+function ABLOG_plainSegment(seg){
+  const s=ABLOG_clean(seg);
+  if(!s)return'';
+  if(s==='enemy defeated')return'triggered after defeating an enemy';
+  if(/support mode: no attacks/i.test(s))return'stayed in support mode instead of attacking';
+  let m=s.match(/^dealt\s+(.+?)\s+bonus damage$/i);if(m)return`dealt ${m[1]} bonus damage`;
+  m=s.match(/^lightning\s+(.+)$/i);if(m)return`dealt ${m[1]} lightning damage`;
+  m=s.match(/^(\d+) attacks$/i);if(m)return`set this turn to ${m[1]} attacks`;
+  m=s.match(/^attack\s*[×x]\s*(.+)$/i);if(m)return`changed attack damage to ×${m[1]}`;
+  m=s.match(/^retargeted\s+(.+)$/i);if(m)return`retargeted ${m[1]}`;
+  if(/Void Armor first-hit protection consumed/i.test(s))return s;
+  if(/Plague Bearer threshold triggered/i.test(s))return s;
+  if(/\srevived$/i.test(s))return s.replace(/\srevived$/i,' was revived');
+  if(/\sdefeated$/i.test(s))return s.replace(/\sdefeated$/i,' was defeated');
+  return s;
+}
+function ABLOG_human(detail,source,phase,pt,et,event){
+  const raw=ABLOG_strip(detail,source,phase),segments=raw.split(' · ').map(ABLOG_clean).filter(Boolean),changes=segments.map(ABLOG_parseChange).filter(Boolean);
+  const incomingSeg=segments.find(s=>/^incoming\s+/i.test(s)),incoming=incomingSeg?.match(/^incoming\s+(.+?)\s+→\s+(.+?)(?:\s+damage)?$/i);
+  const used=new Set(),sentences=[];
+  if(incoming){
+    const rawN=ABLOG_num(incoming[1]),dealtN=ABLOG_num(incoming[2]),hpSeg=segments.find(seg=>{const c=ABLOG_parseChange(seg);return c?.field==='HP'&&(!event?.card||c.name===event.card)}),hp=hpSeg?ABLOG_parseChange(hpSeg):null;
+    const prevented=Math.max(0,(Number(rawN)||0)-(Number(dealtN)||0));
+    if(Number.isFinite(rawN)&&Number.isFinite(dealtN)){
+      if(dealtN<=0)sentences.push(`blocked all ${ABLOG_fmt(rawN)} incoming damage`);
+      else if(prevented>0)sentences.push(`took ${ABLOG_fmt(dealtN)} of ${ABLOG_fmt(rawN)} incoming damage (${ABLOG_fmt(prevented)} prevented)`);
+      else sentences.push(`took ${ABLOG_fmt(dealtN)} damage`);
+      used.add(incomingSeg);
+      if(hpSeg)used.add(hpSeg);
+    }
+  }
+  for(const seg of segments){
+    if(used.has(seg)||/^incoming\s+/i.test(seg))continue;
+    const c=ABLOG_parseChange(seg);
+    if(c){const text=ABLOG_changeSentence(c,changes);if(text)sentences.push(text);continue}
+    const text=ABLOG_plainSegment(seg);if(text)sentences.push(text);
+  }
+  if(phase==='Defense interaction'){
+    const team=event?.team==='Allies'?pt:et,specter=FULL_alive(team||[]).find(x=>FULL_enabled(x,FULL_CONTEXT)&&x.ability?.name==='Haunting Presence');
+    if(specter&&incoming&&ABLOG_num(incoming[2])<ABLOG_num(incoming[1]))sentences.unshift(`${specter.card?.name||'Specter'}'s Haunting Presence was active, lowering enemy damage`);
+    if(source?.ability?.name==='Astral Blessing'&&incoming&&ABLOG_num(incoming[2])<=0)sentences.unshift(`${source.card?.name||'Celestial Entity'} dodged the attack with Astral Blessing`);
+  }
+  return sentences.length?sentences.join('; '):'triggered, but no visible stat or status change was recorded';
+}
+function ABLOG_startNames(f){
+  const own=FULL_team(f,FULL_CONTEXT)||[],names=[];
+  for(const x of FULL_alive(own))if(typeof START_ABILITIES!=='undefined'&&START_ABILITIES.has(x.ability?.name)&&!names.includes(x.ability.name))names.push(x.ability.name);
+  for(const x of own){const c=ABLOG_corruptedName(x);if(c&&!names.includes(c))names.push(c)}
   return names;
 }
-
-const ABILITY_TRACE_baseLogAbility=FULL_logAbility;
-FULL_logAbility=function(events,turn,f,phase,before,pt,et,extra=[]){
-  const start=events?.length||0,out=ABILITY_TRACE_baseLogAbility(events,turn,f,phase,before,pt,et,extra);
-  if(!events||events.length<=start)return out;
-  for(let i=start;i<events.length;i++){
-    const event=events[i];if(!event||event.type!=='ability')continue;
-    try{Object.defineProperty(event,'_abilityTraceDetailed',{value:true,enumerable:false})}catch(_){}
-
-    if(event.card==='Battle Start'){
-      const result=ABILITY_TRACE_resultText(event.detail,f,'Battle start'),names=ABILITY_TRACE_startNames(f);
-      event.detail=`${names.length?names.join(' + '):'Battle start effects'} · ${result}`;
-      continue;
-    }
-
-    const source=ABILITY_TRACE_findSource(event,f,pt,et),result=ABILITY_TRACE_resultText(event.detail,source,phase);
-
-    // Generic incoming-damage changes can come from shields, passives, border effects,
-    // or several stacked modifiers. Show the exact effect without falsely naming one.
-    if(phase==='Defense interaction'){
-      event.detail=`Defense interaction · ${result}`;
-      continue;
-    }
-
-    const abilityName=ABILITY_TRACE_clean(source?.ability?.name||event.card||'Ability'),corrName=phase==='On entry'?ABILITY_TRACE_corruptedName(source):'';
-    event.detail=`${abilityName}${corrName?` + ${corrName}`:''} · ${result}`;
+function ABLOG_formatEvent(event,f,phase,pt,et){
+  if(!event||event.type!=='ability')return;
+  if(event.card==='Battle Start'){
+    const names=ABLOG_startNames(f),result=ABLOG_human(event.detail,f,'Battle start',pt,et,event);
+    event.detail=`${names.length?names.join(' + '):'Battle start effects'} — ${result}`;
+    return;
   }
+  const source=ABLOG_findSource(event,f,pt,et),originalCard=event.card,summary=ABLOG_human(event.detail,source,phase,pt,et,event);
+  if(phase==='Defense interaction'){
+    event.card=source?.card?.name||originalCard||'Defense';
+    event.detail=`Defense — ${summary}`;
+    return;
+  }
+  const ability=ABLOG_clean(source?.ability?.name||originalCard||'Ability'),corr=phase==='On entry'?ABLOG_corruptedName(source):'';
+  event.card=source?.card?.name||originalCard||'Unknown';
+  event.detail=`${ability}${corr?` + ${corr}`:''} — ${summary}`;
+}
+
+const ABLOG_baseLogAbility=FULL_logAbility;
+FULL_logAbility=function(events,turn,f,phase,before,pt,et,extra=[]){
+  const start=events?.length||0,out=ABLOG_baseLogAbility(events,turn,f,phase,before,pt,et,extra);
+  if(!events||events.length<=start)return out;
+  for(let i=start;i<events.length;i++)ABLOG_formatEvent(events[i],f,phase,pt,et);
   return out;
+};
+
+// The normal debug path did not explain on-death abilities that modify a different
+// card. In debug mode only, mirror the existing death resolver and capture those
+// state changes. Non-debug simulations still use the original hot path untouched.
+const ABLOG_baseResolveDeaths=FULL_resolveTeamDeaths;
+FULL_resolveTeamDeaths=function(pt,et,k,r,ctx,events,turn){
+  if(!events)return ABLOG_baseResolveDeaths(pt,et,k,r,ctx,events,turn);
+  let changed=true,guard=0;
+  while(changed&&guard++<30){
+    changed=false;
+    for(const team of [pt,et])for(const f of [...team])if(f&&!f.dead&&f.hp<=0){
+      const before=FULL_snapshot(pt,et),oldLen=team.length,died=die(f,k,team,ctx.opponentTeam(f),r,ctx);changed=true;
+      if(died)FULL_logEvent(events,{turn,type:'death',team:FULL_teamName(f),card:f.card?.name||'Unknown',detail:`Defeated${k?.card?.name?' by '+k.card.name:''}`});
+      else if(f.hp>0)FULL_logEvent(events,{turn,type:'revive',team:FULL_teamName(f),card:f.card?.name||'Unknown',detail:`${f.ability?.name||'Revive'} · revived to ${Math.floor(f.hp)} HP`});
+      if(team.length>oldLen)for(const z of team.slice(oldLen))FULL_logEvent(events,{turn,type:'spawn',team:FULL_teamName(z),card:z.card?.name||'Summon',detail:`Spawned · ${Math.floor(z.hp)} HP · ${Math.floor(z.atk)} ATK`});
+
+      let diff=[];try{if(typeof battleDiff==='function')diff=battleDiff(before,pt,et)}catch(_){}
+      const selfName=f.card?.name||'Unknown';
+      const meaningful=diff.filter(x=>{
+        if(!died)return true;
+        return !String(x).startsWith(`${selfName} HP `)&&String(x)!==`${selfName} defeated`;
+      });
+      if(meaningful.length&&f.ability?.name){
+        const event={turn,type:'ability',team:FULL_teamName(f),card:selfName,detail:`${f.ability.name} · On death · ${meaningful.join(' · ')}`};
+        ABLOG_formatEvent(event,f,'On death',pt,et);events.push(event);
+      }
+    }
+  }
 };
