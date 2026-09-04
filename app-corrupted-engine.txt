@@ -1,0 +1,92 @@
+// Corrupted combat behavior taken from the current game's CorruptedAbilityDefinitions.
+// Exactly one global Corrupted ability is active at a time and applies to every
+// player card with the Corrupted border. Enemies never receive Corrupted abilities.
+
+const CORRUPTED_VALID_IDS=new Set((window.CARDBORN_CORRUPTED_ABILITIES||[]).map(x=>x.id));
+const CORRUPTED_round=n=>Math.floor(Math.max(0,Number(n)||0)+0.5);
+const CORRUPTED_selected=id=>CORRUPTED_VALID_IDS.has(String(id||''))?String(id):'';
+
+corrStart=function(team,id){
+  id=CORRUPTED_selected(id);
+  for(const f of team||[]){
+    if(!f?.flags?.corrupted)continue;
+    f.corr=id;
+    if(!id||f.dead||f.hp<=0)continue;
+    if(id==='CorruptedVigor'){
+      const hp=CORRUPTED_round(f.max*.12);f.max+=hp;f.hp+=hp;
+    }else if(id==='CorruptedMight'){
+      f.atk+=CORRUPTED_round(f.atk*.10);
+    }else if(id==='CorruptedFortitude'){
+      const hp=CORRUPTED_round(f.max*.08),atk=CORRUPTED_round(f.atk*.04);f.max+=hp;f.hp+=hp;f.atk+=atk;
+    }else if(id==='CorruptedFury'){
+      const hp=CORRUPTED_round(f.max*.04),atk=CORRUPTED_round(f.atk*.08);f.max+=hp;f.hp+=hp;f.atk+=atk;
+    }else if(id==='SoulRipper'){
+      const hp=CORRUPTED_round(f.max*.08),atk=CORRUPTED_round(f.atk*.08);f.max+=hp;f.hp+=hp;f.atk+=atk;
+    }
+  }
+};
+
+corrEntry=function(f,t,r,ctx){
+  if(!f?.flags?.corrupted||f.dead||f.hp<=0)return;
+  const id=CORRUPTED_selected(f.corr);
+  if(!id)return;
+  if(id==='WitheringStrike'&&t&&!t.dead&&t.hp>0){
+    t.atk=Math.max(1,t.atk-Math.max(1,CORRUPTED_round(t.atk*.12)));
+  }else if(id==='ChillingTouch'&&t&&!t.dead&&t.hp>0){
+    damage(f,t,Math.max(1,CORRUPTED_round(t.hp*.06)),r,ctx,true);
+  }else if(id==='DecayingPresence'&&t&&!t.dead&&t.hp>0){
+    const pct=t.max>f.max?.12:.08;damage(f,t,Math.max(1,CORRUPTED_round(t.hp*pct)),r,ctx,true);
+  }else if(id==='CursedRetribution'){
+    f.atk+=Math.max(1,CORRUPTED_round(f.atk*.12));
+    if(t&&!t.dead&&t.hp>0&&t.atk>f.atk)t.atk=Math.max(1,t.atk-Math.max(1,CORRUPTED_round(t.atk*.12)));
+  }else if(id==='CataclysmicEntry'&&t&&!t.dead&&t.hp>0){
+    const pct=t.hp>=t.max*.75?.14:.10;damage(f,t,Math.max(1,CORRUPTED_round(t.hp*pct)),r,ctx,true);
+  }else if(id==='ApexCorruption'){
+    f.shieldHp=(f.shieldHp||0)+Math.max(1,CORRUPTED_round(f.max*.18));
+    if(t&&!t.dead&&t.hp>0&&t.atk>f.atk)f.atk+=Math.max(1,CORRUPTED_round(f.atk*.10));
+  }
+};
+
+corrReduce=function(t,a,d){
+  d=Math.max(0,Math.floor(Number(d)||0));
+  if(!t?.flags?.corrupted||d<=0)return d;
+  const id=CORRUPTED_selected(t.corr);
+  if(id==='BlightedSkin'){
+    return Math.max(0,Math.floor(d*(a&&a.atk>t.atk?.85:.90)));
+  }
+  if(id==='UnholyResolve'){
+    if(t.hp<=t.max*.50)return Math.max(0,Math.floor(d*.80));
+    return d;
+  }
+  if(id==='VoidArmor'){
+    if(t._voidArmorUsed)return d;
+    t._voidArmorUsed=true;
+    return Math.max(0,Math.floor(d*.40));
+  }
+  if(id==='PlagueBearer'){
+    const remaining=t.hp-d;
+    if(remaining>0&&remaining<=t.max*.35&&!t._plagueBearerTriggered){
+      t._plagueBearerTriggered=true;
+      t.atk+=Math.max(1,CORRUPTED_round(t.atk*.10));
+    }
+  }
+  return d;
+};
+
+corrPost=function(f,t,dealt,killed){
+  if(!f?.flags?.corrupted||f.dead||f.hp<=0)return;
+  const id=CORRUPTED_selected(f.corr),real=Math.max(0,Number(dealt)||0),max=Math.max(1,f.max||1);
+  if(id==='RotTouch'){
+    if(t&&!t.dead&&t.hp>0&&real>0){const cut=Math.max(1,CORRUPTED_round(real*.08));t.max=Math.max(1,t.max-cut);t.hp=Math.min(t.hp,t.max)}
+  }else if(id==='CursedFangs'){
+    if(real>0){const pct=f.hp<=max*.5?.14:.08,cap=Math.max(1,CORRUPTED_round(max*.15)),amount=Math.min(Math.max(1,CORRUPTED_round(real*pct)),cap);heal(f,amount)}
+  }else if(id==='VampiricCorruption'){
+    if(real>0){const cap=Math.max(1,CORRUPTED_round(max*.15)),amount=Math.min(Math.max(1,CORRUPTED_round(real*.12)),cap);heal(f,amount);if(killed)f.shieldHp=(f.shieldHp||0)+Math.max(1,CORRUPTED_round(max*.10))}
+  }else if(id==='EternalRot'){
+    if(real>0){const cap=Math.max(1,CORRUPTED_round(max*.15)),amount=Math.min(Math.max(1,CORRUPTED_round(real*.10)),cap);heal(f,amount)}
+    if(t&&!t.dead&&t.hp>0)t.atk=Math.max(1,t.atk-Math.max(1,CORRUPTED_round(t.atk*.06)));
+  }else if(id==='SoulHarvester'){
+    heal(f,Math.max(1,CORRUPTED_round(max*.10)));
+    if(killed){f.atk+=Math.max(1,CORRUPTED_round(f.atk*.08));f.shieldHp=(f.shieldHp||0)+Math.max(1,CORRUPTED_round(max*.12))}
+  }
+};
