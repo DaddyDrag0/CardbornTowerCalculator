@@ -1,0 +1,12 @@
+// Debug presentation only: compact large raw numbers in battle events so death,
+// revive, spawn, and stall messages match the rest of the battle log.
+// Example: "9096809 damage" -> "9.1M damage".
+const DEBUG_EVENT_NUMBERS_baseLogEvent=FULL_logEvent;
+FULL_logEvent=function(events,event){
+  if(event&&typeof event.detail==='string'){
+    event={...event,detail:event.detail.replace(/\b\d{4,}\b/g,m=>{
+      const n=Number(m);return Number.isFinite(n)?compact(n):m;
+    })};
+  }
+  return DEBUG_EVENT_NUMBERS_baseLogEvent(events,event);
+};
