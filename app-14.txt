@@ -36,7 +36,7 @@ function EXPERIMENTAL_decorateBans(){
     const counter=right.querySelector('b');if(counter)counter.textContent=`${count}/${limit}`;
   }
   const help=box.querySelector(':scope > small');
-  if(help)help.textContent=state.experimentalBans?'Experimental testing: remove up to ten non-secret cards from the enemy pool.':'Remove up to three non-secret cards from the enemy pool.';
+  if(help)help.remove();
   const search=box.querySelector('#bsearch');
   if(search){search.disabled=count>=limit;search.placeholder=count>=limit?`${limit}/${limit} bans selected`:'Search card to ban…'}
   if(state.experimentalBans){
