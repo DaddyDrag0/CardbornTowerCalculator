@@ -18,8 +18,9 @@ function BAN_PRESET_normalize(raw){
     const bans=BAN_PRESET_sanitize(raw);
     return{bans,normalCount:Math.min(3,bans.length)};
   }
-  const bans=BAN_PRESET_sanitize(raw?.bans);
-  return{bans,normalCount:Math.max(0,Math.min(3,bans.length,Math.floor(Number(raw?.normalCount)??3)))};
+  const bans=BAN_PRESET_sanitize(raw?.bans),savedCount=Number(raw?.normalCount);
+  const normalCount=Number.isFinite(savedCount)?Math.max(0,Math.min(3,bans.length,Math.floor(savedCount))):Math.min(3,bans.length);
+  return{bans,normalCount};
 }
 function BAN_PRESET_active(){return state.banPresets[state.activeBanPreset]||{bans:[],normalCount:0}}
 function BAN_PRESET_limit(){return state.experimentalBans?10:3}
