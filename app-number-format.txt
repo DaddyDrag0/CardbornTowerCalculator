@@ -1,0 +1,25 @@
+// Extended compact-number formatting for Void and stacked-border values.
+// Existing scale is preserved through Qi, then continued with standard short-scale suffixes.
+compact=function(n){
+  n=Number(n);
+  if(!Number.isFinite(n))return n===Infinity?'∞':n===-Infinity?'-∞':'0';
+  const a=Math.abs(n);
+  const units=[
+    [1e63,'Vg'],[1e60,'Nod'],[1e57,'Ocd'],[1e54,'Spd'],[1e51,'Sxd'],
+    [1e48,'Qid'],[1e45,'Qad'],[1e42,'Td'],[1e39,'Dd'],[1e36,'Ud'],
+    [1e33,'Dc'],[1e30,'No'],[1e27,'Oc'],[1e24,'Sp'],[1e21,'Sx'],
+    [1e18,'Qi'],[1e15,'Q'],[1e12,'T'],[1e9,'B'],[1e6,'M'],[1e3,'K']
+  ];
+  for(const [d,s] of units){
+    if(a>=d){
+      const v=n/d,av=Math.abs(v);
+      return v.toFixed(av>=100?0:av>=10?1:2).replace(/\.0+$|(?<=\.[0-9])0+$/,'')+s;
+    }
+  }
+  if(a>=1e66){
+    const exp=Math.floor(Math.log10(a));
+    const mant=n/Math.pow(10,exp);
+    return mant.toFixed(2).replace(/\.0+$|(?<=\.[0-9])0+$/,'')+'e'+exp;
+  }
+  return Math.round(n).toLocaleString();
+};
