@@ -1,4 +1,4 @@
-# Void Tower update: v51 draft
+# Void Tower update: v51
 
 Source: the user-provided October 5, 2026 update log and `225x Luck Cardborn RNG.rbxl`, place version 3786. The binary file's SHA-256 is recorded in `data/progression.json`. Script text was extracted for inspection; the attached scripts were not executed. The export has client scripts and replicated definitions, and explicitly omits server scripts.
 
@@ -12,11 +12,13 @@ Source: the user-provided October 5, 2026 update log and `225x Luck Cardborn RNG
 - Preserve current progression definitions in `data/progression.json`: six skill trees and their buffs, seven Transcendence nodes, both Grandmasteries, Abyss/Oblivion configuration, Tower/Void shops, 19 Index Sets, and 18 Personal Artifact stat definitions. Artifact slots now have a configured maximum of 11. The stat optimizer has not been started.
 - Regression coverage confirms Ghostly Minions remain living combatants and never replace the saved four-card loadout. The omitted server fix itself cannot be audited here.
 
-## Required before release
+## Estimated Void Fracture values
 
-The update log confirms **Shatter at three stacks**, but neither it nor the client export gives the new generic Fracture damage increase, healing reduction, Shatter damage amount/basis, or stack limit. `VOID_FRACTURE_RULES` leaves those fields unset. World 8 battles stop with a clear error instead of producing numbers from invented constants. The UI states that World 8 values are pending.
+The update log confirms **Shatter at three stacks**, but neither it nor the client export gives the new generic Fracture damage increase, healing reduction, Shatter damage amount/basis, or stack limit. On October 5, 2026, the user explicitly authorized releasing the calculator with reasonable estimates for the missing values.
 
-The tests use synthetic Fracture values solely to exercise the control flow. Passing those tests does not verify the missing game constants. The draft must not be merged or deployed until the actual values and mechanics are confirmed and exercised again.
+The released estimates are **+10% damage taken and −10% healing per stack, 50% of the applying card's attack as base Shatter damage, and a five-stack cap**. These are provisional modeling choices, not values extracted from the game. The modest modifiers and attack-based burst keep the generic effect below the explicitly described card-specific Shatter strikes; the five-stack cap bounds retained stacks under Vaeloryn. None of that reasoning confirms the actual server behavior.
+
+The simulation panel has an expandable notice showing these values and their estimated status. Public engine status also distinguishes estimated rules from confirmed mechanics. Tests and workers use the same released defaults without injecting replacement constants. Passing the tests verifies the implementation and worker agreement, not accuracy against the unavailable server formula. Replace these estimates if authoritative values become available.
 
 ## Interpretations requiring server or owner confirmation
 
@@ -30,4 +32,4 @@ The tests use synthetic Fracture values solely to exercise the control flow. Pas
 
 ## Validation
 
-Run `npm ci` and `npm test` with Node 24. Tests cover card/Fabled coverage, known combat changes, Void border persistence, 3–6 ban migration/presets, summon/copy behavior, missing-value handling, and nine seeded page/worker comparisons. Local browser checks also cover desktop/mobile layout, six-ban persistence, and an actual child-worker run. GitHub Pages deployment waits for this test job.
+Run `npm ci` and `npm test` with Node 24. Tests cover card/Fabled coverage, known combat changes, Void border persistence, 3–6 ban migration/presets, summon/copy behavior, visible estimate labeling, missing-configuration handling, the released Fracture defaults, and nine seeded page/worker comparisons. Browser checks also cover desktop/mobile layout, six-ban persistence, all four named Void cards, and actual child-worker runs with both regular and Void teams. GitHub Pages deployment waits for this test job.

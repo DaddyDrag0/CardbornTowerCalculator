@@ -1,20 +1,22 @@
 // Void Tower update, from the October 5, 2026 place export (version 3786).
 // Client definitions are available; the server combat implementation is absent.
-// Unspecified Fracture numbers stay unset instead of silently inventing results.
+// The user authorized estimated Fracture values for release on October 5, 2026.
+// Only the three-stack Shatter threshold is confirmed by the update log.
 const VOID_FRACTURE_RULES={
   shatterStacks:3,
-  damagePerStack:null,
-  healingReductionPerStack:null,
-  shatterDamage:null,
-  shatterBase:null,
-  maxStacks:null
+  damagePerStack:.10,
+  healingReductionPerStack:.10,
+  shatterDamage:.50,
+  shatterBase:'sourceAttack',
+  maxStacks:5,
+  estimated:true
 };
 window.CARDBORN_VOID_RULES=VOID_FRACTURE_RULES;
 function VOID_rulesReady(){
   return ['damagePerStack','healingReductionPerStack','shatterDamage','maxStacks'].every(k=>Number.isFinite(VOID_FRACTURE_RULES[k]))&&['sourceAttack','targetMaxHealth'].includes(VOID_FRACTURE_RULES.shatterBase);
 }
 function VOID_requireRules(){
-  if(!VOID_rulesReady())throw Error('Void Fracture needs confirmed damage, healing reduction, Shatter damage/basis, and stack cap before World 8 simulations can run.');
+  if(!VOID_rulesReady())throw Error('Void Fracture requires valid damage, healing reduction, Shatter damage/basis, and stack cap before World 8 simulations can run.');
 }
 const VOID_WORLD_NAMES=new Set(CARDS.filter(c=>c.badgeRequired==='VoidWorldBadge').map(c=>c.name));
 const VOID_FRACTURE_ABILITIES=new Set(['Dust of Nothing','Impossible Route','Unwritten Requiem','Beyond the Horizon','History Ends Here']);
@@ -229,8 +231,8 @@ die=function(f,k,team,foes,r,ctx){
   return result;
 };
 
-// Add status for review; missing server values remain an explicit limitation.
-window.CARDBORN_ENGINE_STATUS={...window.CARDBORN_ENGINE_STATUS,version:51,voidFractureConfirmed:VOID_rulesReady(),maxEnemyBans:6};
+// Keep estimates distinct from confirmed game mechanics in public engine status.
+window.CARDBORN_ENGINE_STATUS={...window.CARDBORN_ENGINE_STATUS,version:51,voidFractureConfirmed:VOID_rulesReady()&&!VOID_FRACTURE_RULES.estimated,voidFractureEstimated:!!VOID_FRACTURE_RULES.estimated,maxEnemyBans:6};
 
 const VOID_baseBattle=battle;
 battle=function(pt,et,r,cid,debug=false){
@@ -241,11 +243,14 @@ battle=function(pt,et,r,cid,debug=false){
 const VOID_baseRender=render;
 render=function(){
   VOID_baseRender();
-  if(VOID_rulesReady())return;
+  if(VOID_rulesReady()&&!VOID_FRACTURE_RULES.estimated)return;
   const panel=root.querySelector('.simulation-body');
   if(panel){
-    const note=document.createElement('p');note.className='void-update-note';note.setAttribute('role','status');
-    note.textContent='World 8 simulations are awaiting confirmed Void Fracture values. Other combat updates and unlocked ban slots are available for review.';
+    const note=document.createElement('details');note.className='void-update-note';
+    const summary=document.createElement('summary'),description=document.createElement('p');
+    summary.textContent=VOID_rulesReady()?'Void card results use estimated Fracture values':'Void Fracture values are unavailable';
+    description.textContent=VOID_rulesReady()?`Assumed: +${VOID_FRACTURE_RULES.damagePerStack*100}% damage taken and −${VOID_FRACTURE_RULES.healingReductionPerStack*100}% healing per stack; Shatter deals ${VOID_FRACTURE_RULES.shatterDamage*100}% of the applying card’s attack; maximum ${VOID_FRACTURE_RULES.maxStacks} stacks. Shatter at ${VOID_FRACTURE_RULES.shatterStacks} stacks is confirmed. These estimates may differ from the game.`:'World 8 simulations need valid Void Fracture values before they can run.';
+    note.append(summary,description);
     panel.prepend(note);
   }
 };

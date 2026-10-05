@@ -34,9 +34,20 @@ test('All 160 definitions and 140 Fabled descriptions have registered handlers',
   assert.equal(p.w.CARDBORN_ABILITY_AUDIT.ok,true,JSON.stringify(p.w.CARDBORN_ABILITY_AUDIT));
   assert.deepEqual(p.errors,[]);
 });
-test('Missing server values stop World 8 estimates with an explicit error',()=>{
-  assert.equal(t.VOID_rulesReady(),false);
-  assert.throws(()=>t.battle([fighter(t,'Nullwing Harvester')],[fighter(t,'Peasant','e')],r,''),/confirmed/);
+test('Released Fracture estimates are usable and visibly marked as unconfirmed',()=>{
+  assert.equal(t.VOID_rulesReady(),true);
+  assert.equal(t.VOID_FRACTURE_RULES.estimated,true);
+  assert.equal(p.w.CARDBORN_ENGINE_STATUS.voidFractureConfirmed,false);
+  assert.equal(p.w.CARDBORN_ENGINE_STATUS.voidFractureEstimated,true);
+  assert.match(p.w.document.querySelector('.void-update-note').textContent,/estimated.*50%.*maximum 5.*3 stacks is confirmed/s);
+});
+test('Missing Fracture configuration still stops invalid estimates',()=>{
+  const previous=t.VOID_FRACTURE_RULES.shatterDamage;
+  try{
+    t.VOID_FRACTURE_RULES.shatterDamage=null;
+    assert.equal(t.VOID_rulesReady(),false);
+    assert.throws(()=>t.battle([fighter(t,'Nullwing Harvester')],[fighter(t,'Peasant','e')],r,''),/valid/);
+  }finally{t.VOID_FRACTURE_RULES.shatterDamage=previous}
 });
 test('Void border stats and team codes survive save, load, and import',()=>{
   const team=t.state.teams[0];team.cards.forEach(s=>{s.name='Nihilus, the Final Horizon';s.flags={...t.flags(),void:true,fabled:true}});
@@ -118,13 +129,17 @@ test('Ghostly Minions remain in the battle, and summons never mutate saved teams
   assert.equal(t.state.teams[0].cards.length,4);
 });
 
-// Synthetic values exercise the mechanics independently of the missing game numbers.
-// These values stay in the test process and are never written into production data.
-Object.assign(t.VOID_FRACTURE_RULES,{damagePerStack:.1,healingReductionPerStack:.1,shatterDamage:.2,shatterBase:'sourceAttack',maxStacks:5});
+// Exercise the released estimates without overriding page or worker configuration.
 test('Three stacks Shatter and reset; healing uses Fracture reduction',()=>{
   const a=fighter(t,'Nullwing Harvester'),b=fighter(t,'Peasant','e'),ctx=context(t,[a],[b]);
   assert.equal(t.VOID_addFracture(a,b,2,r,ctx),false);b.hp=5000;t.heal(b,1000);assert.equal(b.hp,5800);
-  assert.equal(t.VOID_addFracture(a,b,1,r,ctx),true);assert.equal(b._voidFracture,0);assert.equal(b.hp,5600);
+  assert.equal(t.VOID_addFracture(a,b,1,r,ctx),true);assert.equal(b._voidFracture,0);assert.equal(b.hp,5300);
+});
+test('Estimated damage and healing modifiers respect the five-stack cap',()=>{
+  const a=fighter(t,'Vaeloryn, The Last'),b=fighter(t,'Peasant','e',100000,10),ctx=context(t,[a],[b]);
+  t.VOID_addFracture(a,b,2,r,ctx);assert.equal(t.incoming(b,a,100,r,ctx),120);
+  t.VOID_addFracture(a,b,20,r,ctx);assert.equal(b._voidFracture,5);
+  b.hp=1000;t.heal(b,1000);assert.equal(b.hp,1500);
 });
 test('Nullwing bonus hits cannot queue another bonus hit',()=>{
   const a=fighter(t,'Nullwing Harvester','p',10000,1000,true),b=fighter(t,'Peasant','e'),ctx=context(t,[a],[b]),queue=[];
@@ -174,7 +189,7 @@ async function worker(){
     const w=await worker();
     const result=await vm.runInContext(`self.__cardbornChildRun({team:{cards:[{name:'Nihilus, the Final Horizon',flags:{fabled:true,void:true}},{name:'Aurelion',flags:{}},{name:'The Creator',flags:{fabled:true}},{name:'Verdant Worm',flags:{}}]},start:1,cap:1,seed:123,speed:2.5,bans:[]})`,w.ctx);
     test('Child worker boots the complete current engine and returns finite results',()=>{assert.equal(result.seed,123);assert.ok(Number.isFinite(result.actions));assert.ok(Number.isFinite(result.seconds));assert.equal(w.messages.some(m=>m.type==='ready'),true)});
-    Object.assign(w.sandbox.__test.VOID_FRACTURE_RULES,t.VOID_FRACTURE_RULES);
+    test('Page and child worker load identical released Fracture estimates',()=>{assert.deepEqual(JSON.parse(JSON.stringify(w.sandbox.__test.VOID_FRACTURE_RULES)),JSON.parse(JSON.stringify(t.VOID_FRACTURE_RULES)))});
     const groups=[['Nihilus, the Final Horizon','Aurelion','The Creator','Verdant Worm'],['Nullwing Harvester','Choir of the Unmade','Orphax','Vaeloryn, The Last'],['The Unwritten','The Grand Contraption','Cosmic Dragon','Rift Dragon']];
     for(const names of groups)for(const seed of [17,93,405]){
       const foes=['Vaeloryn, The Last','Arcane Overlord','Dread Lord','World Eater'];
