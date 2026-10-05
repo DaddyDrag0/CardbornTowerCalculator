@@ -20,9 +20,8 @@ die=function(f,k,team,foes,r,ctx){
   if(f._onDeathUsed&&!(f.ability?.name==='Soul Reservoir'&&f.revives<2)){
     const savedAbility=f.ability;
     f.ability={...(savedAbility||{}),name:`${savedAbility?.name||'Ability'} (death spent)`};
-    const result=RULE_baseDie(f,k,team,foes,r,ctx);
-    f.ability=savedAbility;
-    return result;
+    f._deathAbility=savedAbility;
+    try{return RULE_baseDie(f,k,team,foes,r,ctx)}finally{f.ability=savedAbility;delete f._deathAbility}
   }
 
   f._onDeathUsed=true;

@@ -17,7 +17,19 @@ function FULL_logEvent(events,event){if(events)events.push(event)}
 function FULL_snapshot(pt,et){try{return typeof captureBattle==='function'?captureBattle(pt,et):null}catch(_){return null}}
 function FULL_teamName(f){return f?.side==='p'?'Allies':'Enemies'}
 function FULL_ensureEntry(team,foes,r,ctx,events,turn,pt,et){
-  const f=FULL_active(team);if(!f||f._entered)return f;f._entered=true;const target=FULL_active(foes),before=FULL_snapshot(pt,et);enter(f,target,team,foes,r,ctx);FULL_logAbility(events,turn,f,'On entry',before,pt,et);return FULL_active(team);
+  for(let guard=0;guard<30;guard++){
+    const f=FULL_active(team);if(!f||f._entered)return f;
+    f._entered=true;const target=FULL_active(foes),before=FULL_snapshot(pt,et);
+    enter(f,target,team,foes,r,ctx);FULL_logAbility(events,turn,f,'On entry',before,pt,et);
+    FULL_resolveTeamDeaths(pt,et,f,r,ctx,events,turn);
+  }
+  return FULL_active(team);
+}
+function FULL_ensureBattleEntry(pt,et,r,ctx,events,turn){
+  for(let guard=0;guard<30;guard++){
+    FULL_ensureEntry(pt,et,r,ctx,events,turn,pt,et);FULL_ensureEntry(et,pt,r,ctx,events,turn,pt,et);
+    if((!FULL_active(pt)||FULL_active(pt)._entered)&&(!FULL_active(et)||FULL_active(et)._entered))break;
+  }
 }
 function FULL_resolveTeamDeaths(pt,et,k,r,ctx,events,turn){
   let changed=true,guard=0;while(changed&&guard++<30){changed=false;for(const team of [pt,et])for(const f of [...team])if(f&&!f.dead&&f.hp<=0){const beforeHp=f.hp,oldLen=team.length,died=die(f,k,team,ctx.opponentTeam(f),r,ctx);changed=true;if(died)FULL_logEvent(events,{turn,type:'death',team:FULL_teamName(f),card:f.card?.name||'Unknown',detail:`Defeated${k?.card?.name?' by '+k.card.name:''}`});else if(f.hp>0)FULL_logEvent(events,{turn,type:'revive',team:FULL_teamName(f),card:f.card?.name||'Unknown',detail:`${f.ability?.name||'Revive'} · revived to ${Math.floor(f.hp)} HP`});if(team.length>oldLen)for(const z of team.slice(oldLen))FULL_logEvent(events,{turn,type:'spawn',team:FULL_teamName(z),card:z.card?.name||'Summon',detail:`Spawned · ${Math.floor(z.hp)} HP · ${Math.floor(z.atk)} ATK`})}}
@@ -28,26 +40,27 @@ function FULL_beforeHitAuras(actor,target,own,foes,r,ctx,events,turn){
   if(FULL_enabled(target,ctx)&&target.ability?.name==='Raging Tempest'&&r()<(FULL_fab(target)?.65:.50)){const d=Math.floor(target.atk*(FULL_fab(target)?.45:.35)),before=FULL_snapshot(ctx.all[0],ctx.all[1]);FULL_effectDamage(target,actor,d,r,ctx,true,{lightning:true});FULL_logAbility(events,turn,target,'Before enemy attack',before,ctx.all[0],ctx.all[1],[`lightning ${d}`])}
 }
 function FULL_prepareHit(actor,target,foes,r,ctx,hitNo,totalHits,baseMult){
-  let actual=target,mult=baseMult,ignore=actor.ability?.name==='Perfect Strike',flat=0,meta={direct:true,targetWasFrozen:!!target?.frozen};
-  const n=actor.ability?.name;
+  let actual=target,mult=baseMult,ignore=FULL_enabled(actor,ctx)&&actor.ability?.name==='Perfect Strike',flat=0,meta={direct:true,targetWasFrozen:!!target?.frozen};
+  const n=FULL_enabled(actor,ctx)?actor.ability?.name:'';
   if(actor._eyeNext){mult*=actor._eyeNext;actor._eyeNext=0}
   if(actor._taintedBonus){flat+=actor._taintedBonus;actor._taintedBonus=0}
   if(actor._kingFirstBonus&&actor._firstAttack&&hitNo===0)flat+=actor._kingFirstBonus;
   if(actor._consumeGunshinExtra&&hitNo>=totalHits-actor._consumeGunshinExtra&&actor._gunshinFlat)flat+=actor._gunshinFlat;
   if(n==='Celestial Smite'&&hitNo===1)mult*=FULL_fab(actor)?1.80:1.25;
-  if(n==='Triple Petal Slash'&&FULL_fab(actor)&&hitNo===3){mult=1.50;ignore=true;meta.tripleFinal=true}
+  if(n==='Triple Petal Slash'&&FULL_fab(actor)&&hitNo===3){mult=1.50;ignore=false;meta.ignoreReduction=true;meta.tripleFinal=true}
   if(n==='Tunnel Strike'&&target){const living=FULL_alive(foes),idx=living.indexOf(target);if(idx>=0&&idx+1<living.length&&r()<(FULL_fab(actor)?.85:.70)){actual=living[idx+1];mult*=FULL_fab(actor)?1.50:1.20;meta.tunnel=true;meta.tunnelOriginalHp=actual.hp}}
-  if(n==='Unstoppable Force'&&actor._firstAttack&&hitNo===0){const living=FULL_alive(foes);if(living.length>1){const front=living[0],pos=foes.indexOf(front);foes.splice(pos,1);foes.push(front);front._entered=false;FULL_reindex(foes);actual=FULL_active(foes);meta.unstoppablePush=true;if(FULL_fab(actor))mult*=.75}else mult*=FULL_fab(actor)?4.5:3.5;actor._unstoppableUsed=true}
-  if(n==='Till Death Do Us Part'){if(hitNo===0)actor.hp=Math.max(1,actor.hp-Math.floor(actor.hp*(FULL_fab(actor)?.10:.15)));const proc=r()<(FULL_fab(actor)?.65:.50);meta.romeoProc=proc;if(proc&&actual){mult*=1+(FULL_fab(actor)?.55:.40);flat+=Math.floor(actual.max*(FULL_fab(actor)?.07:.05));actor._romeoProcs=(actor._romeoProcs||0)+1}}
+  if(n==='Unstoppable Force'&&!actor._unstoppableUsed&&actor._firstAttack&&hitNo===0){const living=FULL_alive(foes);if(living.length>1){const front=living[0],pos=foes.indexOf(front);foes.splice(pos,1);foes.push(front);front._entered=false;FULL_reindex(foes);actual=FULL_active(foes);meta.unstoppablePush=true;if(FULL_fab(actor))mult*=.75}else mult*=FULL_fab(actor)?4.5:3.5;actor._unstoppableUsed=true}
+  if(n==='Till Death Do Us Part'){const proc=r()<(FULL_fab(actor)?.65:.50);meta.romeoProc=proc;if(proc&&actual){actor.hp=Math.max(1,actor.hp-Math.floor(actor.hp*(FULL_fab(actor)?.10:.15)));mult*=1+(FULL_fab(actor)?.55:.40);flat+=Math.floor(actual.max*(FULL_fab(actor)?.07:.05));actor._romeoProcs=(actor._romeoProcs||0)+1}}
+  if(n==='Assassin’s Blizzard'){actual=FULL_lowest(foes)||actual;meta.targetWasFrozen=!!actual?.frozen;if(actual?.frozen)mult*=FULL_fab(actor)?2:1.40}
   if(n==='Pull of the Deep'&&actual){const living=FULL_alive(foes),pos=Math.max(0,living.indexOf(actual)),arr=FULL_fab(actor)?[1,.80,.65,.50]:[.25,.20,.15,.10];mult*=1+(arr[Math.min(pos,3)]||0)}
   return{target:actual,mult,ignore,flat,meta};
 }
 function FULL_afterPrimaryHit(actor,hitTarget,dealt,killed,own,foes,r,ctx,hitMeta,queue){
-  const n=actor.ability?.name;
-  if(n==='Void Beam'){actor._voidBeamCount=(actor._voidBeamCount||0)+1;if(FULL_fab(actor)||actor._voidBeamCount%2===0){const d=Math.floor(actor.atk*.50);if(hitTarget&&!hitTarget.dead)FULL_effectDamage(actor,hitTarget,d,r,ctx);const living=FULL_alive(foes),idx=Math.max(0,living.indexOf(hitTarget)),nx=living[idx+1]||living.find(x=>x!==hitTarget);if(nx)FULL_effectDamage(actor,nx,d,r,ctx)}}
+  if(!FULL_enabled(actor,ctx))return;const n=actor.ability?.name;
+  if(n==='Void Beam'){actor._voidBeamCount=(actor._voidBeamCount||0)+1;if(FULL_fab(actor)||actor._voidBeamCount%2===0){const d=Math.floor(actor.atk*.50);if(hitTarget&&!hitTarget.dead)FULL_effectDamage(actor,hitTarget,d,r,ctx);const nx=hitTarget.dead?FULL_active(foes):foes.slice(foes.indexOf(hitTarget)+1).find(x=>!x.dead&&x.hp>0);if(nx)FULL_effectDamage(actor,nx,d,r,ctx)}}
   if(n==='Between Worlds'&&actor._betweenExtra){for(let i=0;i<actor._betweenExtra;i++)queue.push({mult:1,kind:'between'});actor._betweenExtra=0}
   if(actor._chainAttack?.length){for(const m of actor._chainAttack)queue.push({mult:m,kind:'chain'});actor._chainAttack=[]}
-  if(n==='Tunnel Strike'&&FULL_fab(actor)&&hitMeta?.tunnel&&killed){const raw=Math.floor(actor.atk*hitMeta.mult+hitMeta.flat),excess=Math.max(0,raw-(hitMeta.tunnelOriginalHp||0)),nx=FULL_active(foes);if(excess&&nx)FULL_effectDamage(actor,nx,excess,r,ctx,true,{tunnelCarry:true})}
+  if(n==='Tunnel Strike'&&FULL_fab(actor)&&hitMeta?.tunnel&&killed){const excess=Math.max(0,(actor._voidPrimaryHit?.real||0)-(actor._voidPrimaryHit?.before||hitMeta.tunnelOriginalHp||0)),nx=foes.slice(foes.indexOf(hitTarget)+1).find(x=>!x.dead&&x.hp>0);if(excess&&nx)FULL_effectDamage(actor,nx,excess,r,ctx,true,{tunnelCarry:true})}
 }
 
 battle=function(pt,et,r,cid,debug=false){
@@ -55,17 +68,17 @@ battle=function(pt,et,r,cid,debug=false){
   const initialAllies=debug&&typeof teamDbg==='function'?teamDbg(pt):null,initialEnemies=debug&&typeof teamDbg==='function'?teamDbg(et):null;
   let before=FULL_snapshot(pt,et);teamStart(pt,et,cid);if(debug&&before){for(const f of FULL_alive(pt))FULL_logAbility(events,0,f,'Battle start',before,pt,et)}
   before=FULL_snapshot(pt,et);teamStart(et,pt,'');if(debug&&before){for(const f of FULL_alive(et))FULL_logAbility(events,0,f,'Battle start',before,pt,et)}
-  FULL_CONTEXT=ctx;FULL_ensureEntry(pt,et,r,ctx,events,0,pt,et);FULL_ensureEntry(et,pt,r,ctx,events,0,pt,et);FULL_resolveTeamDeaths(pt,et,null,r,ctx,events,0);
+  FULL_CONTEXT=ctx;FULL_ensureBattleEntry(pt,et,r,ctx,events,0);
   let side='p',actions=0,changes=0,turn=0,guard=0;
   while(guard++<2500){
-    FULL_ensureEntry(pt,et,r,ctx,events,turn,pt,et);FULL_ensureEntry(et,pt,r,ctx,events,turn,pt,et);
+    FULL_ensureBattleEntry(pt,et,r,ctx,events,turn);
     const pa=FULL_active(pt),ea=FULL_active(et);if(!pa||!ea){const win=!!pa&&!ea;return{win,actions,changes,debug:debug?{floor:ctx.floor,initialAllies,initialEnemies,events,finalAllies:teamDbg(pt),finalEnemies:teamDbg(et)}:undefined}}
     const originalSide=ctx.bonusSide||side;if(ctx.bonusSide)ctx.bonusSide=null;let own=originalSide==='p'?pt:et,foes=originalSide==='p'?et:pt,actor=FULL_active(own),target=FULL_active(foes);
     const thief=target&&FULL_enabled(target,ctx)&&target.ability?.name==='Turn Theft'&&!target._turnTheftUsed?target:null;if(thief){thief._turnTheftUsed=true;actor=thief;own=FULL_team(thief,ctx);foes=FULL_enemyTeam(thief,ctx);target=FULL_active(foes)}
     turn++;ctx.turn=turn;
-    if(actor.frozen){actor.frozen--;FULL_logEvent(events,{turn,type:'stall',team:FULL_teamName(actor),card:actor.card.name,detail:'Frozen — turn skipped'});side=originalSide==='p'?'e':'p';continue}
-    if(actor.skip){actor.skip--;FULL_logEvent(events,{turn,type:'stall',team:FULL_teamName(actor),card:actor.card.name,detail:'Stunned — turn skipped'});side=originalSide==='p'?'e':'p';continue}
-    if(actor._confused){const allies=FULL_alive(own).filter(x=>x!==actor),ally=allies.length?pick(r,allies):null;if(ally){const m=actor._confused.mult||1,FULL_before=FULL_snapshot(pt,et);const d=damage(actor,ally,Math.floor(actor.atk*m),r,ctx,false,{confused:true});actions++;FULL_logEvent(events,{turn,type:'turn',team:FULL_teamName(actor),card:actor.card.name,detail:`vs ${ally.card.name} | attacker ${Math.floor(actor.hp)}/${Math.floor(actor.max)} HP ${Math.floor(actor.atk)} ATK | defender ${Math.floor(ally.hp+d)}/${Math.floor(ally.max)} HP ${Math.floor(ally.atk)} ATK`});FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn)}actor._confused=null;side=originalSide==='p'?'e':'p';continue}
+    if(actor.frozen){FULL_specterAuras([own,foes]);actor.frozen--;FULL_logEvent(events,{turn,type:'stall',team:FULL_teamName(actor),card:actor.card.name,detail:'Frozen — turn skipped'});side=originalSide==='p'?'e':'p';continue}
+    if(actor.skip){FULL_specterAuras([own,foes]);actor.skip--;FULL_logEvent(events,{turn,type:'stall',team:FULL_teamName(actor),card:actor.card.name,detail:'Stunned — turn skipped'});side=originalSide==='p'?'e':'p';continue}
+    if(actor._confused){FULL_specterAuras([own,foes]);const allies=FULL_alive(own).filter(x=>x!==actor),ally=allies.length?pick(r,allies):null;if(ally){const m=actor._confused.mult||1,FULL_before=FULL_snapshot(pt,et);const d=damage(actor,ally,Math.floor(actor.atk*m),r,ctx,false,{confused:true});actions++;FULL_logEvent(events,{turn,type:'turn',team:FULL_teamName(actor),card:actor.card.name,detail:`vs ${ally.card.name} | attacker ${Math.floor(actor.hp)}/${Math.floor(actor.max)} HP ${Math.floor(actor.atk)} ATK | defender ${Math.floor(ally.hp+d)}/${Math.floor(ally.max)} HP ${Math.floor(ally.atk)} ATK`});FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn)}actor._confused=null;side=originalSide==='p'?'e':'p';continue}
     const preSnap=FULL_snapshot(pt,et),pre=turnStart(actor,target,own,foes,r,ctx);FULL_logAbility(events,turn,actor,'Turn effect',preSnap,pt,et);FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn);if(actor.dead||actor.hp<=0){side=originalSide==='p'?'e':'p';continue}
     target=pre.target||FULL_active(foes);let attacks=Math.max(0,pre.attacks||0),baseMult=pre.mult??1;
     const queue=[];for(let i=0;i<attacks;i++)queue.push({mult:baseMult,kind:'base',baseIndex:i,baseTotal:attacks});

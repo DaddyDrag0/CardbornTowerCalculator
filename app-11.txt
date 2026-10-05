@@ -21,7 +21,7 @@ FULL_prepareHit=function(actor,target,foes,r,ctx,hitNo,totalHits,baseMult){
   if(isTriple&&hitNo===3&&!actor._tripleSequenceSame){
     out.mult=baseMult;
     out.ignore=false;
-    if(out.meta)out.meta.tripleFinal=false;
+    if(out.meta){out.meta.tripleFinal=false;out.meta.ignoreReduction=false};
   }
   return out;
 };

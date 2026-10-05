@@ -25,26 +25,26 @@ function DRORD_specter(team,ctx){
 incoming=function(t,a,d,r,ctx,ignore=false,meta={}){
   if(!t||d<=0)return 0;
   FULL_CONTEXT=ctx;FULL_init(t);FULL_init(a);t._lastReductionTrace=null;
-  const perfect=ignore||a?.ability?.name==='Perfect Strike';
+  const perfect=ignore||(FULL_enabled(a,ctx)&&a?.ability?.name==='Perfect Strike');
   let amount=Math.max(0,Math.floor(d));
 
   // Damage amplification remains outside the reduction shuffle.
-  if((t._ampTaken||0)>0&&!perfect)amount=Math.floor(amount*(1+t._ampTaken));
-  if(t._vorrathAmpSource===a&&!perfect)amount=Math.floor(amount*1.25);
-  if(t._umbralMark?.source===a&&!perfect)amount=Math.floor(amount*(1+t._umbralMark.amp));
+  if((t._ampTaken||0)>0)amount=Math.floor(amount*(1+t._ampTaken));
+  if(t._vorrathAmpSource===a)amount=Math.floor(amount*1.25);
+  if(t._umbralMark?.source===a)amount=Math.floor(amount*(1+t._umbralMark.amp));
   if(perfect)return amount;
 
-  const enabled=FULL_enabled(t,ctx),n=enabled?t.ability?.name:'';
+  const enabled=FULL_enabled(t,ctx),n=enabled?t.ability?.name:'',dodgeEnabled=FULL_enabled(t,ctx,{dodge:true}),dn=dodgeEnabled?t.ability?.name:'';
 
   // Evasion / complete blocks are not damage reductions.
   if(n==='Nature’s Guardian'&&!t._natureBlocked){t._natureBlocked=true;if(FULL_fab(t))buff(t,.15);return 0}
-  if(n==='Scurrying Escape'&&r()<(FULL_fab(t)?.35:.20)){heal(t,Math.floor(t.max*(FULL_fab(t)?.15:.10)));return 0}
-  if(n==='Eye of the Storm'&&r()<.35){if(FULL_fab(t))t._eyeNext=1.50;return 0}
-  if(n==='Mind Fracture'&&r()<(FULL_fab(t)?.25:.15))return 0;
-  if(n==='Astral Blessing'&&r()<(FULL_fab(t)?.45:.40)){for(const x of FULL_alive(FULL_team(t,ctx))){buff(x,FULL_fab(t)?.15:.10);if(FULL_fab(t))heal(x,Math.floor(x.max*.05))}return 0}
-  if(n==='Royal Decree: Silence'){
+  if(dn==='Scurrying Escape'&&r()<(FULL_fab(t)?.35:.20)){if(enabled)heal(t,Math.floor(t.max*(FULL_fab(t)?.15:.10)));return 0}
+  if(dn==='Eye of the Storm'&&r()<.35){if(enabled&&FULL_fab(t))t._eyeNext=1.50;return 0}
+  if(dn==='Mind Fracture'&&r()<(FULL_fab(t)?.25:.15))return 0;
+  if(dn==='Astral Blessing'&&r()<(FULL_fab(t)?.45:.40)){if(enabled)for(const x of FULL_alive(FULL_team(t,ctx))){buff(x,FULL_fab(t)?.15:.10);if(FULL_fab(t))heal(x,Math.floor(x.max*.05))}return 0}
+  if(dn==='Royal Decree: Silence'){
     const chance=Math.min(FULL_fab(t)?.75:.60,(FULL_fab(t)?.35:.30)+(t._royalHits||0)*.10);
-    if(r()<chance){if(FULL_fab(t))t.atk=Math.floor(t.atk*1.15);return 0}
+    if(r()<chance){if(enabled&&FULL_fab(t))t.atk=Math.floor(t.atk*1.15);return 0}
   }
   if(t._bonusDodge&&r()<t._bonusDodge)return 0;
 
@@ -103,8 +103,10 @@ incoming=function(t,a,d,r,ctx,ignore=false,meta={}){
 
   // Persistent/generic DR accumulated by abilities such as Tip the Guard,
   // Arachnid Dominion, Amethyst Armor and Flow State.
-  const genericDr=clamp(t.dr||0,0,.90);
-  if(genericDr>0)add('Damage Reduction',x=>Math.floor(x*(1-genericDr)));
+  if(t._drEffects?.length){
+    for(const effect of t._drEffects){const q=clamp(effect.amount,0,.90);if(q>0)add(effect.name,x=>Math.floor(x*(1-q)))}
+    if(t._baseDr>0)add('Damage Reduction',x=>Math.floor(x*(1-clamp(t._baseDr,0,.90))));
+  }else{const genericDr=clamp(t.dr||0,0,.90);if(genericDr>0)add('Damage Reduction',x=>Math.floor(x*(1-genericDr)))}
 
   // Corrupted defensive abilities are reductions too and participate in the same shuffle.
   const corr=t?.flags?.corrupted&&typeof CORRUPTED_selected==='function'?CORRUPTED_selected(t.corr):'';
@@ -113,7 +115,7 @@ incoming=function(t,a,d,r,ctx,ignore=false,meta={}){
   if(corr==='VoidArmor'&&!t._voidArmorUsed)add('Void Armor',x=>{t._voidArmorUsed=true;return Math.floor(x*.40)});
 
   const reductionStart=amount,steps=[];
-  for(const effect of DRORD_shuffle(effects,r)){
+  for(const effect of meta.ignoreReduction?[]:DRORD_shuffle(effects,r)){
     if(amount<=0)break;
     const before=amount;
     amount=Math.max(0,Math.floor(effect.apply(amount)));

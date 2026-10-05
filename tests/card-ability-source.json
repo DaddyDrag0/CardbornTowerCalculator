@@ -1,0 +1,1459 @@
+{
+  "source": "CardModule and FabledAbilityText, place version 3786",
+  "serverScriptsIncluded": false,
+  "cards": [
+    {
+      "card": "Scarecrow",
+      "ability": "Field Guardian",
+      "normal": "On entry, increase health by 15%",
+      "fabled": "On entry, increase health by 40%.",
+      "rarity": 2,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Peasant",
+      "ability": "Peasant’s Bravery",
+      "normal": "Deal 10% extra damage when below 30% health",
+      "fabled": "Deal 40% extra damage when below 50% health.",
+      "rarity": 5,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Goblin",
+      "ability": "Pillage",
+      "normal": "On entry, increase attack by 7% of the opponent's attack",
+      "fabled": "On entry, increase attack by 13% of the opponent's attack.",
+      "rarity": 10,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Archer",
+      "ability": "Focused Aim",
+      "normal": "Increase damage by 15% for the first attack",
+      "fabled": "Increase damage by 40% for the first attack.",
+      "rarity": 30,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Rogue",
+      "ability": "Ambush",
+      "normal": "On entry, attack for 40% of your damage and 25% chance to double your attack for one turn",
+      "fabled": "On entry, attack for 60% of your damage and 50% chance to double your attack for one turn.",
+      "rarity": 55,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Rogue(Black Cat)",
+      "ability": "Ambush",
+      "normal": "On entry, attack for 40% of your damage and 25% chance to double your attack for one turn",
+      "fabled": "On entry, attack for 60% of your damage and 50% chance to double your attack for one turn.",
+      "rarity": 550000,
+      "secret": true,
+      "weather": null
+    },
+    {
+      "card": "Priest",
+      "ability": "Purifying Light",
+      "normal": "Increase all allies health by 5%",
+      "fabled": "Increase all allies health by 12%.",
+      "rarity": 80,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Druid",
+      "ability": "Nature’s Guardian",
+      "normal": "Block the first attack made against you",
+      "fabled": "Block the first attack made against you. After blocking, increase stats by 15%",
+      "rarity": 100,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Mage",
+      "ability": "Flame Wall",
+      "normal": "Deal 8% of enemies max health at the start of each turn for 2 turns",
+      "fabled": "Deal 10% of enemies max health at the start of each turn for 2 turns and every burn reduces enemies attack by 10%",
+      "rarity": 180,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Witch",
+      "ability": "Dark Pact",
+      "normal": "Every Turn, Sacrifice 10% of the Witch's health to increase your damage by 10%",
+      "fabled": "Every Turn, Sacrifice 5% of the Witch's health to increase your damage by 20%",
+      "rarity": 300,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Assassin",
+      "ability": "Backstab",
+      "normal": "Deal 30% more damage if this card is in the last slot",
+      "fabled": "Deal 60% more damage if this card is in one of the last two slots",
+      "rarity": 500,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Spear Goblin",
+      "ability": "Throwing Spear",
+      "normal": "While this card is alive, deal 20% of this cards damage on allies first turn",
+      "fabled": "While this card is alive, deal 60% of this cards damage on allies first turn",
+      "rarity": 650,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Knight",
+      "ability": "Resilience",
+      "normal": "Reduce damage taken by 15% while above 40% health",
+      "fabled": "Reduce damage taken by 25% while above 20% health",
+      "rarity": 800,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Goblin Gang",
+      "ability": "Swarm Strike",
+      "normal": "Gain 20% bonus damage for every card in your party with goblin in its name",
+      "fabled": "Gain 20% bonus stats for every card in your party with goblin in its name",
+      "rarity": 1100,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Goblin Gang(Undead Army)",
+      "ability": "Swarm Strike",
+      "normal": "Gain 20% bonus damage for every card in your party with goblin in its name",
+      "fabled": "Gain 20% bonus stats for every card in your party with goblin in its name",
+      "rarity": 11000000,
+      "secret": true,
+      "weather": null
+    },
+    {
+      "card": "Paladin",
+      "ability": "Holy Strike",
+      "normal": "Heal 15% of your max health before attacking",
+      "fabled": "Heal 15% of your max health and gain that heal amount to your damage before attacking",
+      "rarity": 1250,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Paladin(Samurai)",
+      "ability": "Holy Strike",
+      "normal": "Heal 15% of your max health before attacking",
+      "fabled": "Heal 15% of your max health and gain that heal amount to your damage before attacking",
+      "rarity": 12500000,
+      "secret": true,
+      "weather": null
+    },
+    {
+      "card": "Necromancer",
+      "ability": "Raise Dead",
+      "normal": "On death, Revive a random fallen ally with 20% of their max health",
+      "fabled": "On death, revive a random fallen ally with 25% max health and give them a shield for one turn",
+      "rarity": 2000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Goblin Lord",
+      "ability": "Goblin Rally",
+      "normal": "On death summon 2 goblins to add to the end of your deck",
+      "fabled": "On death summon 2 goblins to add to the end of your deck, they inherit 25% of this card’s max health and damage",
+      "rarity": 3500,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Berserker",
+      "ability": "Double Strike",
+      "normal": "Attack twice in a row",
+      "fabled": "Attack twice in a row. Every opponent kill heals 15% of your health",
+      "rarity": 6000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Berserker(Voidserker)",
+      "ability": "Double Strike",
+      "normal": "Attack twice in a row",
+      "fabled": "Attack twice in a row. Every opponent kill heals 15% of your health",
+      "rarity": 60000000,
+      "secret": true,
+      "weather": null
+    },
+    {
+      "card": "Lich",
+      "ability": "Lich’s Curse",
+      "normal": "Reduce the attack of the opponent by 10% after every attack",
+      "fabled": "Reduce the attack of the opponent by 10% after every attack, 75% of total reduced attack is added to this cards attack",
+      "rarity": 10000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Spiderling",
+      "ability": "Scurrying Escape",
+      "normal": "When attacked, this card has a 20% chance to dodge the attack. On dodge, heal 10% of its max health",
+      "fabled": "When attacked, this card has a 35% chance to dodge the attack. On dodge, heal 15% of its max health",
+      "rarity": 20000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Barbarian",
+      "ability": "Savage Fury",
+      "normal": "For each enemy defeated by this card, increase this card's damage by 15% for the remainder of the battle",
+      "fabled": "For each enemy defeated, gain +20% damage. At 2 kills, also gain +10% lifesteal. At 3 kills, gain 1 Shield",
+      "rarity": 24000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Coin Squire",
+      "ability": "Tip the Guard",
+      "normal": "Take 30% reduced damage, but lose 30% of your attack",
+      "fabled": "Take 30% reduced damge and survive a lethal hit with 1 health",
+      "rarity": 30000,
+      "secret": false,
+      "weather": "TravelingCaravan"
+    },
+    {
+      "card": "Knight Commander",
+      "ability": "Inspiring Leadership",
+      "normal": "Increase this card's damage and health by 10% for every knight or paladin in your party",
+      "fabled": "Increase this card’s damage and health by 10% for every Knight/Paladin in your party. Knights and Paladins also gain +5% damage and +5% health for each other Knight/Paladin",
+      "rarity": 40000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Armored Spider",
+      "ability": "Cocooned Protection",
+      "normal": "Create a cocoon around this card that absorbs 40% of all incoming damage for 2 turns. After two turns, deal 50% of absorbed damage",
+      "fabled": "Create a cocoon that absorbs 40% of incoming damage for 2 turns. When the cocoon ends, deal 50% of absorbed damage and this card transforms:Fully healing and gaining a random Fabled ability for the rest of the battle",
+      "rarity": 42000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Black Widow",
+      "ability": "Fatal Sting",
+      "normal": "On entry, deal 70% damage. If the target is below 50% health, deal 70% more damage",
+      "fabled": "On entry, deal 100% damage. If the target is below 50% health, deal an additional 70% damage. The sting jumps to the lowest-health enemy and stings at 60% power",
+      "rarity": 58500,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "King",
+      "ability": "King's Rule",
+      "normal": "Boost all allies damage by 15% of this card's damage",
+      "fabled": "Boost all allies stats by 20% of this card's stats. Each ally's first attack also deals bonus damage equal to 10% of this card's damage.",
+      "rarity": 66000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Traveling Trader",
+      "ability": "Fine Print",
+      "normal": "Lose 20% of your attack on your first turn and give it to the opponent. On your next turn, reset enemy attack to normal and increase yours by 80%",
+      "fabled": "Lose 15% of your attack on your first turn and give it to the opponent. On your next turn, reset enemy attack to normal, increase yours by 100%, and heal to full",
+      "rarity": 80000,
+      "secret": false,
+      "weather": "TravelingCaravan"
+    },
+    {
+      "card": "Pot of Gold",
+      "ability": "Treasure",
+      "normal": "Heal all allies by 5% of this card's max health every turn (Stacks with other Pots of Gold)",
+      "fabled": "Heal all allies by 9% of this card's max health every turn (Stacks with other Pots of Gold)",
+      "rarity": 85000,
+      "secret": false,
+      "weather": "Event"
+    },
+    {
+      "card": "Spider Queen",
+      "ability": "Arachnid Dominion",
+      "normal": "Increase the damage of all spider-related cards in play by 20% and reduce the damage taken by 25%",
+      "fabled": "Increase the damage of all spider-related cards in play by 40% and reduce the damage taken by 30%",
+      "rarity": 92500,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Dragon",
+      "ability": "Dragon’s Roar",
+      "normal": "On entry, stun the enemy for 1 turn and cause them to lose 15% of their damage",
+      "fabled": "On entry, stun the enemy for 1 turn and reduce their damage by 20%. If their attack is lower than yours increase stats by 20%, if its higher, increase by 10%",
+      "rarity": 100000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Dragon(Loong)",
+      "ability": "Dragon’s Roar",
+      "normal": "On entry, stun the enemy for 1 turn and cause them to lose 15% of their damage",
+      "fabled": "On entry, stun the enemy for 1 turn and reduce their damage by 20%. If their attack is lower than yours increase stats by 20%, if its higher, increase by 10%",
+      "rarity": 1000000000,
+      "secret": true,
+      "weather": null
+    },
+    {
+      "card": "Griffin",
+      "ability": "Blinding Dive",
+      "normal": "After every attack, have a 20% chance to do an extra 40% damage and stun the opponent",
+      "fabled": "After every attack, have a 30% chance to do an extra 100% damage and stun the opponent",
+      "rarity": 125000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Prism Serpent",
+      "ability": "Reflective Coil",
+      "normal": "Every turn have 50% chance to reduce enemy attack by 15%",
+      "fabled": "Every turn reduce enemy attack by 20%(Max of 50% of original damage)",
+      "rarity": 200000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Prism Serpent(Celestial)",
+      "ability": "Reflective Coil",
+      "normal": "Every turn have 50% chance to reduce enemy attack by 15%",
+      "fabled": "Every turn reduce enemy attack by 20%(Max of 50% of original damage)",
+      "rarity": 2000000000,
+      "secret": true,
+      "weather": null
+    },
+    {
+      "card": "Burrow Bomber",
+      "ability": "Tunnel Strike",
+      "normal": "On attack, 70% chance to bypass the frontline and hit the next card in the enemy deck for 120% of your damage",
+      "fabled": "On attack, 85% chance to bypass the frontline and hit the next card in the enemy deck for 150% of your damage. If that card dies from the hit, the next card takes the extra damage",
+      "rarity": 200000,
+      "secret": false,
+      "weather": "GnomeRaid"
+    },
+    {
+      "card": "Market Guard",
+      "ability": "Paid Security",
+      "normal": "Increase stats by 35% for each Traveling Caravan card on your team, except other guards",
+      "fabled": "Increase stats by 40% for each Traveling Caravan card on your team, except other guards, also give 15% stat increase to other Traveling Caravan cards",
+      "rarity": 250000,
+      "secret": false,
+      "weather": "TravelingCaravan"
+    },
+    {
+      "card": "Werewolf",
+      "ability": "Full Moon Transformation",
+      "normal": "On death, revive and increase max health and damage by 15%",
+      "fabled": "On death, revive and increase max health and damage by 20% and gain an extra turn",
+      "rarity": 225000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Shardsprite",
+      "ability": "Refraction",
+      "normal": "30% of incoming damage is reflected back to the attacker",
+      "fabled": "30% of incoming damage is reflected back to the attacker, then heal for 60% of reflected damage",
+      "rarity": 295000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "The Heartbroken",
+      "ability": "Rejection of Love",
+      "normal": "Upon entry, double this cards health. Every time this card takes damage, the active enemy card takes damage equal to 25% of this cards original health and has their damage reduced by 10%.",
+      "fabled": "Upon entry, 2.5x this cards health. Every time this card takes damage, the active enemy card takes damage equal to 30% of this cards original health and has their damage reduced by 15%.",
+      "rarity": 325000,
+      "secret": false,
+      "weather": "Event"
+    },
+    {
+      "card": "Gleamstone Golem",
+      "ability": "Gemstone Fortress",
+      "normal": "Create a barrier on the first card in your party that absorbs damage for one turn",
+      "fabled": "Create a barrier on the first card in your party and yourself that absorbs damage for one turn",
+      "rarity": 380000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Young Disciple",
+      "ability": "Unshaken Form",
+      "normal": "This card cannot be stunned or frozen, and enemy double attacks against this card only hit once",
+      "fabled": "This card cannot be stunned or frozen, enemy double attacks only hit once, and whenever this card survives an attack it permanently gains 15% damage and heals 5% of max hp.",
+      "rarity": 444000,
+      "secret": false,
+      "weather": "WarriorsPath"
+    },
+    {
+      "card": "Tax Collector",
+      "ability": "Taxed",
+      "normal": "On entry, steal 12% of each enemy’s damage and evenly distribute it among allied cards",
+      "fabled": "On entry, steal 15% of each enemy’s damage and evenly distribute it among allied cards. On attack turns, heal for 20% of damage dealt",
+      "rarity": 500000,
+      "secret": false,
+      "weather": "TravelingCaravan"
+    },
+    {
+      "card": "Vampire",
+      "ability": "Vampiric Drain",
+      "normal": "Heal for 50% of your damage after every attack",
+      "fabled": "Heal for 60% of your damage after every attack. Excess healing becomes a shield(Up to 50% of max health)",
+      "rarity": 500000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Quartz Beetle",
+      "ability": "Crystal Slam",
+      "normal": "Every turn, have a 50% chance to to do 110% damage and heal 10% of max health",
+      "fabled": "Every turn, have an 80% chance to to do 130% damage and heal 15% of max health",
+      "rarity": 610000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Iron Legionnaire",
+      "ability": "Seasoned Veteran",
+      "normal": "This card cannot take more than 35% of its max health in a single attack",
+      "fabled": "This card cannot take more than 30% of its max health in a single attack",
+      "rarity": 700000,
+      "secret": false,
+      "weather": "IronLegion"
+    },
+    {
+      "card": "Archmage",
+      "ability": "Arcane Mastery",
+      "normal": "Each turn have a 40% chance to absorb 10% of the opponent's health and damage",
+      "fabled": "Each turn absorb 7% of the opponent's health and damage",
+      "rarity": 750000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "The Embodiment of Luck",
+      "ability": "Luck Incarnate",
+      "normal": "On death, this card passes on anywhere from 7-77% of its stats to the next card",
+      "fabled": "On death, this card passes on anywhere from 77-177% of its stats to the next card",
+      "rarity": 777777,
+      "secret": false,
+      "weather": "NewYearsFestival"
+    },
+    {
+      "card": "Gnomelord Technician",
+      "ability": "Chaotic Contraption",
+      "normal": "Every turn, trigger one of three effects at random: boost your damage by 20%, heal 10%, or explode for 10% damage to both teams",
+      "fabled": "Every turn, trigger one of three effects at random: boost your damage by 120%, heal 30%, or explode dealing 40% of this cards damage to the opposing team",
+      "rarity": 800000,
+      "secret": false,
+      "weather": "GnomeRaid"
+    },
+    {
+      "card": "Gnomelord Technician(Clockwork King)",
+      "ability": "Chaotic Contraption",
+      "normal": "Every turn, trigger one of three effects at random: boost your damage by 20%, heal 10%, or explode for 10% damage to both teams",
+      "fabled": "Every turn, trigger one of three effects at random: boost your damage by 120%, heal 30%, or explode dealing 40% of this cards damage to the opposing team",
+      "rarity": 8000000000,
+      "secret": true,
+      "weather": "GnomeRaid"
+    },
+    {
+      "card": "Elemental Lord",
+      "ability": "Elemental Fury",
+      "normal": "Every turn there is a chance to either freeze or deal 10% of the opponent's max health",
+      "fabled": "Every turn there is a chance to either freeze or deal 14% of the opponent's max health + 20% of this cards damage",
+      "rarity": 900000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Lich King",
+      "ability": "Dark Ritual",
+      "normal": "When this card drops below 60% health for the first time, increase attack by 50% of dead allies total attack",
+      "fabled": "When this card drops below 75% health for the first time, increase attack by 65% of dead allies total attack",
+      "rarity": 1000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Storm Giant",
+      "ability": "Eye of the Storm",
+      "normal": "This card has a 35% chance to dodge an attack",
+      "fabled": "This card has a 35% chance to dodge an attack. When it dodges, its next attack deals 50% more damage",
+      "rarity": 1000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "The Cake of Celebration",
+      "ability": "The Coming of the Year",
+      "normal": "Every turn, the Cake of Celebration gains 1% extra stats. This bonus increases by 2% every turn",
+      "fabled": "Every turn, the Cake of Celebration gains 2% extra stats. This bonus increases by 2% every turn. Every 3rd turn it heals 30% of max hp",
+      "rarity": 1270000,
+      "secret": false,
+      "weather": "Event"
+    },
+    {
+      "card": "Wyrmling",
+      "ability": "Weak Growth",
+      "normal": "Increase stats by 5% at the start of your turn",
+      "fabled": "Increase stats by 6% at the start of your turn and heal 8% of max health",
+      "rarity": 1110000,
+      "secret": false,
+      "weather": "DragonsRoost"
+    },
+    {
+      "card": "King Prismalith",
+      "ability": "Crystalline Prison",
+      "normal": "Every other turn, trap a random enemy in a crystalline prison for 1 turn, stunning them and doing 15% of their max health",
+      "fabled": "Every other turn, trap a random enemy in a crystalline prison for 1 turn, stunning them, dealing 15% of their max health, and causing them to take 25% more damage for 1 turn",
+      "rarity": 1250000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Tinkering Gnome",
+      "ability": "Gearjam",
+      "normal": "On entry, scramble the current enemy’s stats swapping their health and damage(Doesnt work on boss cards)",
+      "fabled": "On entry, scramble the current enemy’s stats, swapping their health and damage, then reduce both by 25%. Does not work on boss cards.",
+      "rarity": 1400000,
+      "secret": false,
+      "weather": "GnomeRaid"
+    },
+    {
+      "card": "Nian",
+      "ability": "Stricken Terror",
+      "normal": "Every other turn, there is a 65% chance that Nian stuns the enemy card and steals 20% of the opponents health and attack(Max of 300%)",
+      "fabled": "Every other turn, there is a 65% chance that Nian stuns the enemy card and steals 30% of the opponents health and attack(Max of 350%)",
+      "rarity": 1500000,
+      "secret": false,
+      "weather": "NewYearsFestival"
+    },
+    {
+      "card": "Amethyst Spider",
+      "ability": "Amethyst Armor",
+      "normal": "Reduce incoming damage by 10%. Every attack, gain a stacking buff that increases your defense by 5%, up to a maximum of 35%",
+      "fabled": "Reduce incoming damage by 20%. Every attack, gain a stacking buff that increases your defense by 5%, up to a maximum of 45%",
+      "rarity": 1500000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Sun Sprite",
+      "ability": "Radiant Burst",
+      "normal": "Every turn, unleash a burst that increases the health of all allies by 7% and burns all enemies for 7% of their health",
+      "fabled": "Every turn, unleash a burst that increases the health of all allies by 10% and burns all enemies for 7% of their health + 10% of this cards damage",
+      "rarity": 2000000,
+      "secret": false,
+      "weather": "GlaringSun"
+    },
+    {
+      "card": "Sun Sprite(Eclipse)",
+      "ability": "Radiant Burst",
+      "normal": "Every turn, unleash a burst that increases the health of all allies by 7% and burns all enemies for 7% of their health",
+      "fabled": "Every turn, unleash a burst that increases the health of all allies by 10% and burns all enemies for 7% of their health + 10% of this cards damage",
+      "rarity": 20000000000,
+      "secret": true,
+      "weather": "GlaringSun"
+    },
+    {
+      "card": "Divine Archmage",
+      "ability": "Sacred Rejuvenation",
+      "normal": "Have a 50% chance to pass on 50% of this card's health and damage to the next card",
+      "fabled": "Pass on 50% of this card's health and damage to the next card and increase both by 10%",
+      "rarity": 2000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Verdant Worm",
+      "ability": "Bloomburst",
+      "normal": "On entry, heal all allies for 12% of their max health. On death, all living allies permanently gain 15% max health and 10% damage",
+      "fabled": "On entry, heal all allies for 20% of their max health. On death, all living allies permanently gain 25% max health and 18% damage.",
+      "rarity": 3200000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Leprechaun",
+      "ability": "Greed",
+      "normal": "For each Pot of Gold on your team, increase stats by 15%",
+      "fabled": "At the start of battle, devour all Pot of Golds. Increase stats by 35% per Pot devoured. When defeating another card, heal 5% of this cards health(+5% for each pot devoured)",
+      "rarity": 3170000,
+      "secret": false,
+      "weather": "Event"
+    },
+    {
+      "card": "Iron Protector",
+      "ability": "Hold the Line",
+      "normal": "While this card is alive, the first attack against each ally is redirected to this card",
+      "fabled": "While this card is alive, the first attack against each ally is redirected to this card and reduced by 60%",
+      "rarity": 4000000,
+      "secret": false,
+      "weather": "IronLegion"
+    },
+    {
+      "card": "Void Angel",
+      "ability": "Void Beam",
+      "normal": "Every other attack deals 50% of the Void Angel's damage to the current target as well as the next",
+      "fabled": "Every attack deals 50% of the Void Angel's damage to the current target as well as the next",
+      "rarity": 5000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Void Angel(True Angel)",
+      "ability": "Void Beam",
+      "normal": "Every other attack deals 50% of the Void Angel's damage to the current target as well as the next",
+      "fabled": "Every attack deals 50% of the Void Angel's damage to the current target as well as the next",
+      "rarity": 50000000000,
+      "secret": true,
+      "weather": null
+    },
+    {
+      "card": "Janus, God of Beginnings",
+      "ability": "Renewal of a New Cycle",
+      "normal": "Janus gains 100% extra health upon entry. If Janus is alive and active for 4 turns, the whole party revives at 50% of their max health. This can only trigger once per battle (Multiple Janus cannot activate it multiple times).",
+      "fabled": "Janus gains 185% extra health upon entry. If Janus is alive and active for 4 turns, the whole party revives at 65% of their max health. This can only trigger once per battle (Multiple Janus cannot activate it multiple times).",
+      "rarity": 6000000,
+      "secret": false,
+      "weather": "NewYearsFestival"
+    },
+    {
+      "card": "Hollow Archer",
+      "ability": "Soulpierce Arrow",
+      "normal": "Every turn have a 15% chance to deal 3x damage",
+      "fabled": "Every turn have a 20% chance to deal 3x damage and gain +5% crit chance stacking until it triggers",
+      "rarity": 8000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "The Last Mammoth",
+      "ability": "Age of Beasts",
+      "normal": "Increase health by 40%. Take the damage dealt to the card before this one and split it to this card. On death, revive with 40% of max health",
+      "fabled": "Increase health by 120%. Take the damage dealt to the card before this one, split it to this card, and reduce the damage by 20%. On death, revive with 50% of max health",
+      "rarity": 8500000,
+      "secret": false,
+      "weather": "RipInTime"
+    },
+    {
+      "card": "Solar Paladin",
+      "ability": "Solar Ward",
+      "normal": "At the start of battle, grant a shield to all allies equal to 25% of their health. If an enemy breaks this shield burn them for 10% of their max hp",
+      "fabled": "At the start of battle, grant a shield to all allies equal to 50% of their health. If an enemy breaks this shield burn them for 10% of their max hp",
+      "rarity": 9000000,
+      "secret": false,
+      "weather": "GlaringSun"
+    },
+    {
+      "card": "Ice Dragon",
+      "ability": "Frost Breath",
+      "normal": "Every turn have a 35% chance to freeze the enemy, do 60% more damage to frozen enemies",
+      "fabled": "Every turn have a 40% chance to freeze the enemy, do 150% more damage to frozen enemies",
+      "rarity": 10000000,
+      "secret": false,
+      "weather": "DragonsRoost"
+    },
+    {
+      "card": "Demon Lord",
+      "ability": "Demonic Fury",
+      "normal": "Gain 10% attack for every 10% of health lost, stacking up to 50%",
+      "fabled": "Gain 20% attack for every 10% of health lost, stacking up to 90%",
+      "rarity": 10000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Abomination",
+      "ability": "Critical Mass",
+      "normal": "Deal 3x damage, but lose 25% of attack every turn",
+      "fabled": "Deal 4x damage, but lose 25% of attack every turn. If this card defeats an enemy, restore 25% of its lost attack.",
+      "rarity": 11100000,
+      "secret": false,
+      "weather": "BlackHole"
+    },
+    {
+      "card": "Elder Dragon",
+      "ability": "Immortal Scales",
+      "normal": "When this card drops below 50% health for the first time, heal for 50% of its max health and gain 10% attack every turn after",
+      "fabled": "When this card drops below 60% health for the first time, heal for 65% of its max health and gain 15% attack every turn after.",
+      "rarity": 12500000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Heavenly Hen",
+      "ability": "Strut & Strike",
+      "normal": "Every other turn swap between two stances: (1) Reduce the next attack against this card by 30%. (2) Deal 80% more damage to enemies with a lower rarity than this card.",
+      "fabled": "Every other turn swap between two stances: (1) Reduce the next attack against this card by 45%. (2) Deal 120% more damage to enemies with a lower rarity than this card.",
+      "rarity": 15000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "The Grand Contraption",
+      "ability": "Overdrive Ejection",
+      "normal": "On entry, increase stats by 100%. On death, summon a random Gnome Raid card with matching borders directly after this card",
+      "fabled": "On entry, increase health and damage by 200%. On death, summon two different random Gnome Raid cards with matching borders directly after this card. Each summon gains 25% health and damage.",
+      "rarity": 15000000,
+      "secret": false,
+      "weather": "GnomeRaid"
+    },
+    {
+      "card": "Ghastly Herald",
+      "ability": "Death’s Whisper",
+      "normal": "On entry, 35% damage to a single enemy and apply a debuff that increases damage taken by 25% for 2 turns. If the enemy dies while affected, summon a Ghostly Minion with 20% of the enemy's max health and attack",
+      "fabled": "On entry, deal 45% damage to a single enemy and apply a debuff that increases damage taken by 35% for 2 turns. If the enemy dies while affected, summon a Ghostly Minion with 30% of the enemy's max health and attack.",
+      "rarity": 16000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Specter",
+      "ability": "Haunting Presence",
+      "normal": "While this card is alive, all enemy cards deal 15% less damage, and all allied cards heal 5% of their max health at the start of each turn.",
+      "fabled": "While this card is alive, all enemy cards deal 22% less damage, and all allied cards heal 8% of their max health at the start of each turn.",
+      "rarity": 18000000,
+      "secret": false,
+      "weather": "ShadowedWorld"
+    },
+    {
+      "card": "Specter(Grim Reaper)",
+      "ability": "Haunting Presence",
+      "normal": "While this card is alive, all enemy cards deal 15% less damage, and all allied cards heal 5% of their max health at the start of each turn.",
+      "fabled": "While this card is alive, all enemy cards deal 22% less damage, and all allied cards heal 8% of their max health at the start of each turn.",
+      "rarity": 180000000000,
+      "secret": true,
+      "weather": "ShadowedWorld"
+    },
+    {
+      "card": "Storm King",
+      "ability": "Raging Tempest",
+      "normal": "Before each enemy attack, have a 50% chance to be struck by lightning dealing 35% of this card's damage",
+      "fabled": "Before each enemy attack, have a 65% chance to be struck by lightning dealing 45% of this card's damage",
+      "rarity": 20000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Earth King",
+      "ability": "Earth's Blessing",
+      "normal": "On entry, reduce the damage taken by 15% for the whole party",
+      "fabled": "On entry, reduce damage taken by 25% for the whole party. The first time each ally is hit, they also gain 10% max health.",
+      "rarity": 20000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Frost Warden",
+      "ability": "Winter’s Grasp",
+      "normal": "After every attack, add 7% of the enemies stats to yourself and have a 20% chance to freeze for one turn(Max of 250% of current stats)",
+      "fabled": "After every attack, add 10% of the enemy's stats to yourself and have a 30% chance to freeze for one turn. Max of 300% of current stats.",
+      "rarity": 20000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Thunder Arbiter",
+      "ability": "Moment of Impact",
+      "normal": "The first time this card would be defeated, survive with 1 health and stun the attacker, skipping their next attack",
+      "fabled": "The first time this card would be defeated, survive with 1 health, stun the attacker, and restore 25% of its max health at the start of its next turn.",
+      "rarity": 20000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Flare King",
+      "ability": "Crown of Embers",
+      "normal": "On entry, gain the crown of embers which increases attack and health by 30%. On death pass it to the next ally reducing gains by 10% each time its passed on",
+      "fabled": "On entry, gain the Crown of Embers, increasing this card’s attack and health by 45%. On death, pass the crown to the next ally, reducing its bonuses by 15% each time it is passed. At the start of battle, add a Sunsprite to the front of your deck with the same border as this card.",
+      "rarity": 22500000,
+      "secret": false,
+      "weather": "GlaringSun"
+    },
+    {
+      "card": "Marching Colossus",
+      "ability": "Colossal Momentum",
+      "normal": "Each time this card defeats an enemy, it immediately attacks the next enemy for 50% damage",
+      "fabled": "Each time this card defeats an enemy, it immediately attacks the next enemy for 85% damage. Each chained hit loses less damage than normal.",
+      "rarity": 25000000,
+      "secret": false,
+      "weather": "IronLegion"
+    },
+    {
+      "card": "Marching Colossus(Void Colossus)",
+      "ability": "Colossal Momentum",
+      "normal": "Each time this card defeats an enemy, it immediately attacks the next enemy for 50% damage",
+      "fabled": "Each time this card defeats an enemy, it immediately attacks the next enemy for 85% damage. Each chained hit loses less damage than normal.",
+      "rarity": 250000000000,
+      "secret": true,
+      "weather": "IronLegion"
+    },
+    {
+      "card": "Patient Roller",
+      "ability": "Double or Nothing",
+      "normal": "Double the damage of your next attack, but there’s a 50% chance that you will deal no damage instead",
+      "fabled": "Triple the damage of your next attack, but there’s a 35% chance that you will deal no damage instead.",
+      "rarity": 25000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Blighted Blacksmith",
+      "ability": "Cursed Forge",
+      "normal": "Increase the attack and health of all allies by 7%. For each attack, increase both by 5% more",
+      "fabled": "Increase the attack and health of all allies by 12%. For each attack, increase both by 7% more.",
+      "rarity": 28000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Shade",
+      "ability": "Slip Between Shadows",
+      "normal": "When attacked, this card takes 40â€“75% of the incoming damage instead. If the damage taken is 40â€“45%, stun the attacker for 1 turn",
+      "fabled": "When attacked, this card takes 30–65% of the incoming damage instead. If the damage taken is 30–40%, stun the attacker for 1 turn.",
+      "rarity": 30000000,
+      "secret": false,
+      "weather": "ShadowedWorld"
+    },
+    {
+      "card": "Dream Eater",
+      "ability": "Mind Fracture",
+      "normal": "On attack, 15% chance to confuse the target, making them attack their own ally on their next turn dealing 80% of the original damage. Also a 15% chance to dodge incoming attacks",
+      "fabled": "On attack, 25% chance to confuse the target, making them attack their own ally on their next turn dealing 100% of the original damage. Also a 25% chance to dodge incoming attacks.",
+      "rarity": 30000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Dream Eater(Signus)",
+      "ability": "Mind Fracture",
+      "normal": "On attack, 15% chance to confuse the target, making them attack their own ally on their next turn. Also a 15% chance to dodge incoming attacks",
+      "fabled": "On attack, 25% chance to confuse the target, making them attack their own ally on their next turn dealing 100% of the original damage. Also a 25% chance to dodge incoming attacks.",
+      "rarity": 300000000000,
+      "secret": true,
+      "weather": null
+    },
+    {
+      "card": "Dragon Broodmother",
+      "ability": "Dragon Mother",
+      "normal": "Every other turn add a Wyrmling to the end of your team, on death, all dragons damage is increased by 40%",
+      "fabled": "Every other turn add a Fabled Wyrmling to the end of your team. On death, all dragons gain 60% damage and 25% max health.",
+      "rarity": 32500000,
+      "secret": false,
+      "weather": "DragonsRoost"
+    },
+    {
+      "card": "Lotus Swordmaiden",
+      "ability": "Triple Petal Slash",
+      "normal": "Attacks 3 times, with each hit dealing 75% damage",
+      "fabled": "Attack 4 times, each hit dealing 70% damage. If all four strikes hit the same target, the final strike deals 150% damage and ignores damage reduction.",
+      "rarity": 33000000,
+      "secret": false,
+      "weather": "WarriorsPath"
+    },
+    {
+      "card": "Mighty Kraken",
+      "ability": "Crushing Depths",
+      "normal": "On entry, decrease enemy attack by 50% for two rounds",
+      "fabled": "On entry, decrease enemy attack by 65% for three rounds and reduce all backline enemies' attack by 20%.",
+      "rarity": 35000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Theodora, Empress of Resolve",
+      "ability": "Heaven's Threshold",
+      "normal": "While this card is alive, the first attack against each ally, and herself, is reduced by 45%. Every time this effect activates, this card gains 12% health and damage. When this card enters battle, all allies gain 10% health",
+      "fabled": "While this card is alive, the first attack against each ally, and herself, is reduced by 60%. Every time this effect activates, this card gains 18% health and damage. When this card enters battle, all allies gain 18% health.",
+      "rarity": 38000000,
+      "secret": false,
+      "weather": "RipInTime"
+    },
+    {
+      "card": "Paradox Creator",
+      "ability": "Inverse Law",
+      "normal": "This cards attack and health are swapped on entry. Reduce damage taken by 30% of attack",
+      "fabled": "On entry, swap this card's health and attack. Reduce incoming damage by 40% of this card's attack. Whenever damage is reduced by this effect, permanently gain attack equal to 15% of the damage prevented.",
+      "rarity": 42000000,
+      "secret": false,
+      "weather": "BlackHole"
+    },
+    {
+      "card": "Celestial Entity",
+      "ability": "Astral Blessing",
+      "normal": "Have a 40% chance to dodge, on each successful dodge boost your teams health and damage by 10%",
+      "fabled": "Have a 45% chance to dodge. On every successful dodge, increase all allies' health and damage by 15% and heal them for 5% of their max health.",
+      "rarity": 50000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Revenant",
+      "ability": "Undying Grudge",
+      "normal": "When this card dies, it has a 35% chance to revive at 50% health when an allied card dies",
+      "fabled": "After this card dies, whenever an ally dies, have a 50% chance to revive with 75% health and 25% increased damage. Every failed revival increases the next revival chance by 15%, up to 80%.",
+      "rarity": 50000000,
+      "secret": false,
+      "weather": "ShadowedWorld"
+    },
+    {
+      "card": "Iron Juggernaut",
+      "ability": "Unstoppable Force",
+      "normal": "On its first attack, push the current enemy to the back of their team. If there are no enemies behind the target, deal 250% bonus damage instead. Afterward, this card deals 80% more damage for each enemy it has defeated.",
+      "fabled": "On its first attack, push the current enemy to the back of their team and deal 75% damage to the enemy revealed behind them. If there are no enemies behind the target, deal 350% bonus damage instead. Afterward, gain 100% damage for each enemy this card defeats.",
+      "rarity": 52200000,
+      "secret": false,
+      "weather": "IronLegion"
+    },
+    {
+      "card": "Duelist",
+      "ability": "Perfect Strike",
+      "normal": "This card's attacks ignore defensive abilities, including shields, dodges, damage reduction, redirects, and attack negates",
+      "fabled": "This card's attacks ignore all defensive abilities including shields, dodges, damage reduction, redirects, and attack negates. Every other attack gain a shield.",
+      "rarity": 54600000,
+      "secret": false,
+      "weather": "WarriorsPath"
+    },
+    {
+      "card": "Romeo and Juliet",
+      "ability": "Till Death Do Us Part",
+      "normal": "This card attacks twice. Each hit has a 50% chance to deal 5% of the targets max health and deals an extra 40% damage. On ability activation, this card loses 15% of its current health.",
+      "fabled": "Attack twice. Each hit has a 65% chance to deal 7% of the target's max health and 55% additional damage. Lose 10% of current health when this ability activates. If both attacks trigger the bonus, heal 15% of this card's max health.",
+      "rarity": 61400000,
+      "secret": false,
+      "weather": "Event"
+    },
+    {
+      "card": "Vorrath, The Calamity",
+      "ability": "Apex Dragon",
+      "normal": "On Entry, lower all opponents attack by 20% and deal 35% of your damage to all opponents",
+      "fabled": "On entry, reduce all enemies' attack by 30% and deal 60% of this card's damage to every enemy. Enemies struck by the Calamity take 25% increased damage from Vorrath for the rest of the battle.",
+      "rarity": 63000000,
+      "secret": false,
+      "weather": "DragonsRoost"
+    },
+    {
+      "card": "Marionette",
+      "ability": "Puppet Strings",
+      "normal": "Once per battle, if an attack would have been deadly, instead redirect the enemy's attack to their ally with the lowest health",
+      "fabled": "Twice per battle, if an attack would have been deadly, instead redirect the enemy's attack to their ally with the lowest health and amplify it by 25%.",
+      "rarity": 65000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Hollow Bellsinger",
+      "ability": "Melodic Revival",
+      "normal": "Add this cards damage to its health and every other turn revive a dead ally to 50% health. If there are no allies to revive, explode and deal damage equal to your max health",
+      "fabled": "Add this card's damage to its health and reduce incoming damage by 30%. Every other turn, revive a fallen ally to 60% health and give them 20% bonus damage. If there are no allies to revive, explode for 150% of this card's max health.",
+      "rarity": 78000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Behemoth",
+      "ability": "Behemoth’s Wrath",
+      "normal": "On entry increase both health and damage by 50%",
+      "fabled": "On entry, increase health and damage by 80%. The first time this card drops below 50% health, gain another 25% damage.",
+      "rarity": 80000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Perfected Singularity",
+      "ability": "Near Perfection",
+      "normal": "Based on the battle status, heal 20% of your hp, deal 50% more damage, or give yourself 35% dodge chance",
+      "fabled": "Based on the battle status, activate the two most beneficial effects: heal 25% of max health, deal 75% increased damage, or gain 45% dodge chance.",
+      "rarity": 88888888,
+      "secret": false,
+      "weather": "BlackHole"
+    },
+    {
+      "card": "Archbishop of the End",
+      "ability": "Endless Reign",
+      "normal": "Redirect the first attack to the last card in the deck, and gain health and attack based on the percentage of health your ally is missing. Max of 85%",
+      "fabled": "Redirect the first attack to the last card in the deck and block the damage. Then gain health and attack based on the percentage of health your ally would be missing. Max of 120%.",
+      "rarity": 90000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Grandmaster of Forms",
+      "ability": "Flow State",
+      "normal": "Every time this card attacks, gain 20% damage and immediately cleanse one negative effect. Every time this card is attacked, gain 10% damage reduction(Max of 50%). At 5 total Flow stacks, this card enters Flow State, attacking twice and healing for 30% of damage dealt for the rest of battle",
+      "fabled": "Every attack grants 25% damage and cleanses one negative effect. Every time this card is attacked, gain 15% damage reduction (Max 60%). At 4 Flow stacks, permanently attack twice, heal for 35% of damage dealt, and become immune to Stun and Freeze.",
+      "rarity": 94500000,
+      "secret": false,
+      "weather": "WarriorsPath"
+    },
+    {
+      "card": "Chaos Emperor",
+      "ability": "Unstable Power",
+      "normal": "Before attacking, this card attacks between 60% to 250% of their damage",
+      "fabled": "Before attacking, this card attacks between 80% to 320% of its damage. If the roll is above 200%, gain 15% damage.",
+      "rarity": 100000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Abyss Warlord",
+      "ability": "Void Devastation",
+      "normal": "Store damage taken from enemies up to 300% of this cards max health and on death inflict that much damage",
+      "fabled": "Store damage taken from enemies up to 400% of this card's max health. On death, unleash all stored damage on the active enemy. If the active enemy is defeated, excess damage carries into the next enemy.",
+      "rarity": 125000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Umbral",
+      "ability": "Event Horizon",
+      "normal": "Gain a flat 10% damage reduction. On opponent entry, mark the enemy, reducing their damage by 20% and making them take 25% more damage from Umbral. After Umbral is attacked 2 times, skip the enemy's next turn and deal 100% more damage.",
+      "fabled": "Gain 20% damage reduction. On opponent entry, mark them, reducing their damage by 35% and causing them to take 50% more damage from Umbral. After Umbral is attacked twice by a marked enemy, consume the mark to skip their next turn and make Umbral's next attack deal 250% increased damage.",
+      "rarity": 132000000,
+      "secret": false,
+      "weather": "ShadowedWorld"
+    },
+    {
+      "card": "Caesar, Eternal Conqueror",
+      "ability": "Imperial Advance",
+      "normal": "On entry, all allies gain 15% stats. Attack twice. After this card defeats an enemy, gain a shield and immediately attack again for 65% damage",
+      "fabled": "On entry, all allies gain 20% health and damage. Attack twice. Whenever this card defeats an enemy, gain a shield, increase all living allies' health and damage by an additional 5%, and immediately attack again for 80% damage.",
+      "rarity": 155000000,
+      "secret": false,
+      "weather": "RipInTime"
+    },
+    {
+      "card": "Crumbling Warden",
+      "ability": "Final Stand",
+      "normal": "On death, reduce all enemy damage by 20% for 4 turns",
+      "fabled": "On death, reduce all enemy damage by 30% for 6 turns.",
+      "rarity": 160000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Supreme Archangel",
+      "ability": "Grace of the Divine",
+      "normal": "If an attack does less than 25% of your max health, instead heal by that amount",
+      "fabled": "If an attack does less than 35% of your max health, heal for 125% of that amount instead.",
+      "rarity": 200000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Nihilus, the Final Horizon",
+      "ability": "Point of No Return",
+      "normal": "On entry, begin charging a singularity for 3 turns and take 20% less damage while it charges. On the third turn, deal 75% damage to every enemy and end the damage reduction.",
+      "fabled": "On entry, begin charging a singularity for 3 turns and take 25% less damage while it charges. Each turn, deal 20% of this card's damage to every enemy. On the third turn, deal 100% damage to every enemy, end the damage reduction, and permanently reduce surviving enemies' damage by 20%.",
+      "rarity": 255000000,
+      "secret": false,
+      "weather": "BlackHole"
+    },
+    {
+      "card": "Fallen Knight",
+      "ability": "Soul Reservoir",
+      "normal": "On death, have 60% chance to revive to half health and stun the opponent(Can Revive Twice)",
+      "fabled": "On death, have 60% chance to revive to half health and stun the opponent(Can Revive Twice). If this card doesnt revive and stun, revive at 20% health",
+      "rarity": 260000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Eternal Beast",
+      "ability": "Endless Hunger",
+      "normal": "Each turn have a 40% chance to increase stats by 20%",
+      "fabled": "Each turn, have a 55% chance to increase health and damage by 25%.",
+      "rarity": 300000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Eternal Beast(Holy Beast)",
+      "ability": "Endless Hunger",
+      "normal": "Each turn have a 40% chance to increase stats by 20%",
+      "fabled": "Each turn, have a 55% chance to increase health and damage by 25%.",
+      "rarity": 3000000000000,
+      "secret": true,
+      "weather": null
+    },
+    {
+      "card": "Infernal Titan",
+      "ability": "Furnace Heart",
+      "normal": "Every time this card is attacked, increase allies attack by 15%",
+      "fabled": "Every time this card is attacked, increase all other allies' damage by 20%.",
+      "rarity": 455000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Celestial Fury",
+      "ability": "Celestial Smite",
+      "normal": "Attack twice with the second doing 25% more damage",
+      "fabled": "Attack twice with the second hit dealing 80% more damage.",
+      "rarity": 500000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Gunshin",
+      "ability": "Ascendant War Doctrine",
+      "normal": "On entry, all allies gain a second attack on their next attack turn and Warriors Path allies also gain 30% stats for the rest of battle.",
+      "fabled": "On entry, all allies gain a second attack on their next attack turn dealing an additional 60% of this cards damage. Warrior's Path allies also gain 50% Health and Damage for the rest of battle.",
+      "rarity": 525000000,
+      "secret": false,
+      "weather": "WarriorsPath"
+    },
+    {
+      "card": "Mimic",
+      "ability": "Treacherous Feast",
+      "normal": "Every turn, deal 20% of this card’s damage to a random enemy. If that enemy dies, heal to full",
+      "fabled": "Every turn, deal 100% of this card's damage to a random enemy. If that enemy dies, heal to full.",
+      "rarity": 550000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Dragon King",
+      "ability": "King’s Command",
+      "normal": "Every other turn the enemy instead hits themselves for 65% of their damage. This card cannot be shielded.",
+      "fabled": "Every other turn the enemy instead hits themselves for 65% of their damage. This card cannot be shielded. All other dragons gain a shield on reflect.",
+      "rarity": 600000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Forgotten Cultist",
+      "ability": "Rotten Pact",
+      "normal": "On entry, grant the last ally in your deck 150% of your damage, but dies in 2 turns",
+      "fabled": "On entry, grant the last ally in your deck damage equal to 150% of this card's damage, but they die in 4 turns.",
+      "rarity": 625000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Void Reaver",
+      "ability": "Nullify",
+      "normal": "While on the field, stops any new enemy abilities from happening, however, it doesnt remove dodge chance from abilities",
+      "fabled": "While on the field, stop new enemy abilities and reduce incoming damage by 15%.",
+      "rarity": 666000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Titanic Beast",
+      "ability": "Titan’s Kindness",
+      "normal": "If a card died before this one is played, then do 300% damage on this card's next hit, If no card has died, then instead do no damage on your attack turns and boost allies health and damage by 10% each turn",
+      "fabled": "If a card died before this one is played, deal 450% damage on this card's next hit. Otherwise, skip attacks and boost allies' health and damage by 15% each turn.",
+      "rarity": 750000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Abyssal Maw",
+      "ability": "Pull of the Deep",
+      "normal": "Deals bonus damage based on the target's position: +25% to the front enemy, +20% to the second, +15% to the third, and +10% to the fourth",
+      "fabled": "Deals bonus damage based on the target's position: +100% to the front enemy, +80% to the second, +65% to the third, and +50% to the fourth.",
+      "rarity": 800000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Eternal Knight",
+      "ability": "Fate Reversal",
+      "normal": "On entry, negate all damage from the first attack against this card and reflect 35% of that damage back to the attacker. If the attack kills the attacker, heal this card for 50% of their max health",
+      "fabled": "On entry, negate the first attack against this card and reflect 60% of that damage back to the attacker. If the reflection kills the attacker, heal for 75% of max health.",
+      "rarity": 850000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Cosmic Dragon",
+      "ability": "Starfall Barrage",
+      "normal": "On entry, deal 15% of this card's damage to all enemies. For every card defeated, increase attack by 30%",
+      "fabled": "On entry, deal 25% of this card's damage to all enemies. For every card defeated from that damage, permanently gain 40% attack and 20% max health.",
+      "rarity": 900000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "The Silent King",
+      "ability": "Royal Decree: Silence",
+      "normal": "Start with a 30% chance to dodge, every time this card is hit, increase dodge chance by 10% to a max of 60%",
+      "fabled": "Start with a 35% chance to dodge. Every time this card is hit, increase dodge chance by 10% to a max of 75%. On dodge, gain 15% more damage.",
+      "rarity": 950000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Rift Dragon",
+      "ability": "Between Worlds",
+      "normal": "Every other turn, reduce incoming damage by 70%. Every attack pierces for 35% damage to a random enemy. If the pierce defeats an enemy, attack a second time.",
+      "fabled": "Every other incoming attack deals 80% less damage. Every attack pierces a random enemy for 50% damage. If the pierce defeats an enemy, heal 20% max health and attack a second time.",
+      "rarity": 1000000000,
+      "secret": false,
+      "weather": "Event"
+    },
+    {
+      "card": "Dread Lord",
+      "ability": "Shadow Rebirth",
+      "normal": "Once per battle, when the Dread Lord dies, revive with full health and explode dealing your max health as damage",
+      "fabled": "Once per battle, when the Dread Lord dies, revive with full health and explode dealing your max health as damage to the current enemy and 30% of your max health to all other enemies",
+      "rarity": 1000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Arcane Overlord",
+      "ability": "Arcane Cataclysm",
+      "normal": "If an attack deals less than 25% max health, it is negated. If it exceeds that amount, the damage is reduced by that % of max health and increases by 5% to a max of 50%",
+      "fabled": "Negate attacks below 35% max health. Stronger attacks are reduced by 10% max health and decreases future damage taken by 4% max health, up to 40%.",
+      "rarity": 1000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "World Eater",
+      "ability": "Cataclysmic Devour",
+      "normal": "Steal 30% of the enemies health and damage after defeating them",
+      "fabled": "After defeating an enemy, steal 45% of their max health and damage, healing by the max health stolen.",
+      "rarity": 1500000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "King of Yellow",
+      "ability": "Kings Vision",
+      "normal": "On this card's turn, increase stats by 15%",
+      "fabled": "At the start of every turn, gain 25% health and damage. Every third turn, all living enemies permanently lose 10% damage.",
+      "rarity": 5000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "The Creator",
+      "ability": "Ruler Of Cardborn",
+      "normal": "On entry, if the Enemy card has a lower rarity than this card, increase this card’s damage by 30%, then gain an extra attack. If the Enemy card has a higher rarity than this card, increase this card’s health by 50%, then gain a shield that blocks one attack",
+      "fabled": "On entry against a lower-rarity enemy, gain 50% damage, a shield, and an extra attack. Against a higher-rarity enemy, gain 75% health, a shield, and an extra attack. Against equal rarity, gain both stat boosts, a shield, and an extra attack.",
+      "rarity": 7000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Frosted Sentinel",
+      "ability": "Frozen Guard",
+      "normal": "When this card is attacked, it has a 40% chance to Freeze the attacker for 1 turn",
+      "fabled": null,
+      "rarity": 8500000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Usurper",
+      "ability": "Turn Theft",
+      "normal": "The first time the enemy would take their turn, this card takes a turn instead",
+      "fabled": null,
+      "rarity": 12000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "The Crawling Chaos",
+      "ability": "Borrowed Mask",
+      "normal": "If the allied card before this one dies, copy that card's ability for the rest of the battle",
+      "fabled": null,
+      "rarity": 20000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Blizzard Arcanist",
+      "ability": "Permafrost",
+      "normal": "On entry, Freeze the opposing card for 1 turn. Whenever this card eliminates a Frozen enemy, permanently increase its stats by 20%",
+      "fabled": null,
+      "rarity": 22500000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Aurelion",
+      "ability": "Vigil Everlasting",
+      "normal": "Take 8% less damage for each other living ally. Once per battle, a hit that would drop this card below 40% health is negated and heals 25% of max health instead",
+      "fabled": null,
+      "rarity": 30000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Plague Sovereign",
+      "ability": "Withering Feast",
+      "normal": "On attack, reduce the target's max health by the damage dealt",
+      "fabled": null,
+      "rarity": 35000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Snowmaw",
+      "ability": "Crushing Cold",
+      "normal": "At the start of battle, Freeze the two lowest-rarity enemy cards for 1 turn if their rarity is lower than this card’s rarity. Enemy cards with a lower rarity than this card deal 20% less damage to this card",
+      "fabled": "At the start of battle, Freeze the three lowest-rarity enemy cards for 1 turn if their rarity is lower than this card's rarity. Enemy cards with a lower rarity than this card deal 35% less damage to this card.",
+      "rarity": 44000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Whiteout Stalker",
+      "ability": "Assassin’s Blizzard",
+      "normal": "Attacks always target the lowest-health enemy. If the target is Frozen, this card deals 40% increased damage",
+      "fabled": "Attacks always target the lowest-health enemy. If the target is Frozen, this card deals 100% increased damage and heals for 20% of damage dealt.",
+      "rarity": 94000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Glacial Goliath",
+      "ability": "Arctic Giant’s Protection",
+      "normal": "The first time per battle the allied card directly before this card drops below 40% health, Freeze the opposing card for 1 turn and fully heal that allied card",
+      "fabled": "The first time per battle each allied card directly before this card drops below 50% health, Freeze the opposing card for 1 turn, fully heal that ally, and give them a shield.",
+      "rarity": 190000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Tyrant of the Frozen End",
+      "ability": "Endless Winter",
+      "normal": "On entry, increase this card’s stats by 30% if any enemy card is Frozen. Once per battle if this card would be defeated by an attack, it instead heals for the damage it would have taken",
+      "fabled": "On entry, increase this card's stats by 50% if any enemy card is Frozen. Once per battle, if this card would be defeated by an attack, it instead heals for the damage it would have taken and Freezes the attacker for 2 turns.",
+      "rarity": 225000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Plaguebloom Shaman",
+      "ability": "Necrotic Bloom",
+      "normal": "On entry, increase all allies' max health by 15% and heal them for 20% of their max health. Every other turn, gain a shield that blocks one attack and heal all allies for 8% of their max health",
+      "fabled": "On entry, increase all allies' max health by 40% and heal them for 30% of their max health. Every other turn, gain a shield that blocks one attack and heal all allies for 12% of their max health.",
+      "rarity": 750000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Soulbinder of Decay",
+      "ability": "Hollow Conscription",
+      "normal": "When this card defeats an enemy, that enemy is raised as a corrupted thrall for 1 turn at 40% of their original stats, attacking their former team before crumbling. This card heals 10% of its max health for each thrall raised",
+      "fabled": "When this card defeats an enemy, raise that enemy as a corrupted thrall for 2 turns at 55% of their original stats. This card heals 15% of max health and gains 10% damage for each thrall raised.",
+      "rarity": 2300000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Ruined Vessel",
+      "ability": "Tainted Vitality",
+      "normal": "Whenever this card would be healed, double the amount and convert it into bonus damage instead. At the end of each turn, this card loses 8% of its max health and deals that amount as bonus damage on its next attack",
+      "fabled": "Whenever this card would be healed, triple the amount and convert it into bonus damage instead. At the end of each turn, lose 6% max health and add 150% of that amount as bonus damage on the next attack.",
+      "rarity": 5800000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Blight Knight",
+      "ability": "Festering Edge",
+      "normal": "On each attack, reduce the target's max health by 50% of this card's damage and increase this card's damage by 25%",
+      "fabled": "On each attack, reduce the target's max health by 75% of this card's damage and increase this card's damage by 35%. If the target is defeated, carry half of the max-health reduction to the next enemy.",
+      "rarity": 10300000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Vermathys, the Eternal Blight",
+      "ability": "Curse of Decay",
+      "normal": "When this card would be defeated, instead survive with 1 health and curse the attacking enemy. If the cursed enemy is defeated before attacking again, heal this card for 20% of its max health and grant it a shield",
+      "fabled": "When this card would be defeated, instead survive with 1 health and curse the attacking enemy. If the cursed enemy is defeated before attacking again, heal this card for 35% max health, gain a shield, and permanently gain 20% damage.",
+      "rarity": 16500000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Nullwing Harvester",
+      "ability": "Dust of Nothing",
+      "normal": "Each attack applies 2 Void Fracture. When this card causes an enemy to Shatter, immediately attack again for 80% damage. The extra attack cannot trigger another extra attack",
+      "fabled": "Each attack applies 3 Void Fracture. When this card causes an enemy to Shatter, immediately attack again for 110% damage. The extra attack cannot trigger another extra attack",
+      "rarity": 460000000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Cartographer of Nowhere",
+      "ability": "Impossible Route",
+      "normal": "On entry, reverse the enemy team's order and apply 1 Void Fracture to every enemy. Every second attack sends the target to the back and transfers its Fracture stacks to the enemy brought forward",
+      "fabled": null,
+      "rarity": 766000000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Choir of the Unmade",
+      "ability": "Unwritten Requiem",
+      "normal": "At the start of this card's turn, apply 1 Void Fracture to every enemy. Whenever an enemy Shatters, heal all allies for 10% of their max health and permanently increase all Void World allies' damage by 10%, up to 50%",
+      "fabled": "At the start of this card's turn, apply 2 Void Fracture to every enemy. Whenever an enemy Shatters, heal all allies for 15% of their max health and permanently increase all Void World allies' damage by 10%, up to 60%",
+      "rarity": 1100000000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Orphax",
+      "ability": "Beyond the Horizon",
+      "normal": "Deal 25% more damage for each Void Fracture on the target. When an attack defeats an enemy, transfer its Fracture stacks and all excess damage to the next enemy at 150% strength. This can continue through multiple enemies",
+      "fabled": "Deal 35% more damage for each Void Fracture on the target. When an attack defeats an enemy, transfer its Fracture stacks and all excess damage to the next enemy at 175% strength. This can continue through multiple enemies",
+      "rarity": 2840000000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "Vaeloryn, The Last",
+      "ability": "History Ends Here",
+      "normal": "On entry, apply 2 Void Fracture to every enemy. Attacks apply 1 additional stack. While this card is active, Shattering no longer removes Fracture stacks. When an enemy Shatters, cancel its next ability activation and strike it for 100% damage. The same enemy can only Shatter once every 2 turns",
+      "fabled": "On entry, apply 3 Void Fracture to every enemy. Attacks apply 2 additional stacks. While this card is active, Shattering no longer removes Fracture stacks. When an enemy Shatters, cancel its next ability activation and strike it for 140% damage. The same enemy can only Shatter once every 2 turns",
+      "rarity": 4280000000000000,
+      "secret": false,
+      "weather": null
+    },
+    {
+      "card": "The Unwritten",
+      "ability": "Stolen Verse",
+      "normal": "On entry, steal the ability of the strongest enemy card and use it as its own for the rest of the battle",
+      "fabled": "On entry, steal the ability of the strongest enemy card and use it as its own for the rest of the battle, and gain 20% health and damage",
+      "rarity": 1900000000000000,
+      "secret": false,
+      "weather": null
+    }
+  ],
+  "weatherMultipliers": {
+    "Event": 1.6,
+    "TravelingCaravan": 1.5,
+    "GnomeRaid": 1.7,
+    "IronLegion": 1.85,
+    "NewYearsFestival": 2.15,
+    "GlaringSun": 2.4,
+    "DragonsRoost": 2.85,
+    "WarriorsPath": 3.25,
+    "ShadowedWorld": 4.6,
+    "BlackHole": 6.2,
+    "RipInTime": 9.2
+  }
+}

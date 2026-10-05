@@ -77,7 +77,7 @@ heal=function(f,n){
 const VOID_baseIncoming=incoming;
 incoming=function(t,a,d,r,ctx,ignore=false,meta={}){
   if(t?._voidFracture){VOID_requireRules();d=Math.floor(d*(1+t._voidFracture*VOID_FRACTURE_RULES.damagePerStack))}
-  if(!ignore&&a?.ability?.name!=='Perfect Strike'&&t?._voidCancelNextAbility&&FULL_enabled(t,ctx)&&VOID_DEFENSE_NAMES.has(t.ability?.name))return VOID_cancelActivation(t,()=>VOID_baseIncoming(t,a,d,r,ctx,ignore,meta));
+  if(!ignore&&(!FULL_enabled(a,ctx)||a?.ability?.name!=='Perfect Strike')&&t?._voidCancelNextAbility&&FULL_enabled(t,ctx)&&VOID_DEFENSE_NAMES.has(t.ability?.name))return VOID_cancelActivation(t,()=>VOID_baseIncoming(t,a,d,r,ctx,ignore,meta));
   return VOID_baseIncoming(t,a,d,r,ctx,ignore,meta);
 };
 
@@ -232,7 +232,7 @@ die=function(f,k,team,foes,r,ctx){
 };
 
 // Keep estimates distinct from confirmed game mechanics in public engine status.
-window.CARDBORN_ENGINE_STATUS={...window.CARDBORN_ENGINE_STATUS,version:54,voidFractureConfirmed:VOID_rulesReady()&&!VOID_FRACTURE_RULES.estimated,voidFractureEstimated:!!VOID_FRACTURE_RULES.estimated,maxEnemyBans:6};
+window.CARDBORN_ENGINE_STATUS={...window.CARDBORN_ENGINE_STATUS,version:55,voidFractureConfirmed:VOID_rulesReady()&&!VOID_FRACTURE_RULES.estimated,voidFractureEstimated:!!VOID_FRACTURE_RULES.estimated,maxEnemyBans:6};
 
 const VOID_baseBattle=battle;
 battle=function(pt,et,r,cid,debug=false){

@@ -43,15 +43,23 @@ function FULL_stun(t,n=1){if(!t)return;if(t.ability?.name==='Unshaken Form'||(t.
 function FULL_freeze(t,n=1){if(!t)return;if(t.ability?.name==='Unshaken Form'||(t.ability?.name==='Flow State'&&t._flowOn&&FULL_fab(t)))return;t.frozen=Math.max(t.frozen||0,n)}
 function FULL_addBlock(f,n=1){if(!f||f.ability?.name==='King’s Command')return;f.shields=(f.shields||0)+n}
 function FULL_addHpShield(f,hp,solarBurn=0){if(!f||f.ability?.name==='King’s Command')return;f.shieldHp=(f.shieldHp||0)+Math.max(0,Math.floor(hp));if(solarBurn)f._solarBurnPct=Math.max(f._solarBurnPct||0,solarBurn)}
+function FULL_getDr(f,name,source=f){return f?._drEffects?.find(x=>x.name===name&&x.source===source)?.amount||0}
+function FULL_setDr(f,name,amount,source=f){
+  FULL_init(f);f._drEffects=f._drEffects||[];
+  let effect=f._drEffects.find(x=>x.name===name&&x.source===source);
+  if(effect)effect.amount=amount;else f._drEffects.push({name,source,amount});
+  f.dr=Math.max(f._baseDr||0,...f._drEffects.map(x=>x.amount));
+}
 function FULL_timedAtk(f,factor,turns){if(!f||factor>=1)return;FULL_init(f);const old=f.atk,next=Math.max(1,Math.floor(old*factor));f.atk=next;f._timedAtk.push({restore:old-next,expire:(f.turn||0)+turns})}
 function FULL_expireTimed(f){FULL_init(f);const keep=[];for(const x of f._timedAtk){if((f.turn||0)>x.expire)f.atk+=x.restore;else keep.push(x)}f._timedAtk=keep;if(f._deathWhisper&&f._deathWhisperExpires!=null&&(f.turn||0)>f._deathWhisperExpires){f._ampTaken=Math.max(0,(f._ampTaken||0)-f._deathWhisper.amp);f._deathWhisper=null;f._deathWhisperExpires=null}if(f._prisonAmp!=null&&f._prisonAmpExpire!=null&&(f.turn||0)>f._prisonAmpExpire){f._ampTaken=Math.max(0,(f._ampTaken||0)-f._prisonAmp);f._prisonAmp=null;f._prisonAmpExpire=null}}
-function FULL_enabled(f,ctx=FULL_CONTEXT,{dodge=false}={}){if(!f||f.dead||f.hp<=0)return false;if(f.side==='p'?!state.pAbilities:!state.eAbilities)return false;if(f.silenced)return false;if(!ctx)return true;const other=ctx.opponentTeam?.(f)||[];const nullifier=FULL_active(other);if(nullifier&&nullifier.ability?.name==='Nullify'&&!nullifier.dead&&nullifier.hp>0){if(dodge&&['Scurrying Escape','Eye of the Storm','Mind Fracture','Astral Blessing','Royal Decree: Silence'].includes(f.ability?.name))return true;return false}return true}
-function FULL_deathEnabled(f,ctx=FULL_CONTEXT){if(!f||f.dead)return false;if(f.side==='p'?!state.pAbilities:!state.eAbilities)return false;if(f.silenced)return false;if(!ctx)return true;const other=ctx.opponentTeam?.(f)||[];const nullifier=FULL_active(other);return !(nullifier&&nullifier.ability?.name==='Nullify'&&!nullifier.dead&&nullifier.hp>0)}
+function FULL_nullifier(f,ctx=FULL_CONTEXT){const x=FULL_active(ctx?.opponentTeam?.(f)||[]);return x&&x.ability?.name==='Nullify'&&!x.silenced&&(x.side==='p'?state.pAbilities:state.eAbilities)?x:null}
+function FULL_enabled(f,ctx=FULL_CONTEXT,{dodge=false}={}){if(!f||f.dead||f.hp<=0)return false;if(f.side==='p'?!state.pAbilities:!state.eAbilities)return false;if(f.silenced)return false;if(!ctx)return true;const nullifier=FULL_nullifier(f,ctx);if(nullifier){if(dodge&&['Scurrying Escape','Eye of the Storm','Mind Fracture','Astral Blessing','Royal Decree: Silence'].includes(f.ability?.name))return true;return false}return true}
+function FULL_deathEnabled(f,ctx=FULL_CONTEXT){if(!f||f.dead)return false;if(f.side==='p'?!state.pAbilities:!state.eAbilities)return false;if(f.silenced)return false;if(!ctx)return true;return !FULL_nullifier(f,ctx)}
 
 heal=function(f,n){if(!f||f.dead||n<=0)return;FULL_init(f);n=Math.max(0,Math.floor(n));if(FULL_enabled(f,FULL_CONTEXT)&&f.ability?.name==='Tainted Vitality'){
   const mult=FULL_fab(f)?3:2;f.atk+=Math.floor(n*mult);return;
 }
-const before=f.hp;f.hp=Math.min(f.max,f.hp+n);const excess=Math.max(0,before+n-f.max);if(excess&&FULL_enabled(f,FULL_CONTEXT)&&f.ability?.name==='Vampiric Drain'&&FULL_fab(f))FULL_addHpShield(f,Math.min(excess,Math.floor(f.max*.50)));
+const before=f.hp;f.hp=Math.min(f.max,f.hp+n);const excess=Math.max(0,before+n-f.max);if(excess&&FULL_enabled(f,FULL_CONTEXT)&&f.ability?.name==='Vampiric Drain'&&FULL_fab(f))FULL_addHpShield(f,Math.min(excess,Math.max(0,Math.floor(f.max*.50)-(f.shieldHp||0))));
 };
 
 function FULL_effectDamage(a,t,d,r,ctx,ignore=false,meta={}){if(!t||t.dead||t.hp<=0)return{dealt:0,killed:false};const dealt=damage(a,t,d,r,ctx,ignore,{direct:false,...meta});let killed=false;if(t.hp<=0&&!t.dead)killed=die(t,a,FULL_team(t,ctx),ctx?.opponentTeam?.(t)||FULL_team(a,ctx),r,ctx);return{dealt,killed}}
@@ -66,10 +74,10 @@ teamStart=function(own,foes,cid){FULL_CONTEXT={team:f=>f.side===own[0]?.side?own
   for(const f of own){if(!FULL_enabled(f,FULL_CONTEXT))continue;const n=f.ability.name;
     if(n==='Purifying Light')for(const x of FULL_alive(own))buffHp(x,FULL_percent(f,.05,.12));
     else if(n==='Swarm Strike'){const c=own.filter(x=>/goblin/i.test(x.card?.name||'')).length;if(FULL_fab(f)){for(let i=0;i<c;i++)buff(f,.20)}else f.atk=Math.floor(f.atk*(1+.20*c));}
-    else if(n==='Tip the Guard'){f.dr=Math.max(f.dr,.30);if(!FULL_fab(f))f.atk=Math.max(1,Math.floor(f.atk*.70));}
+    else if(n==='Tip the Guard'){FULL_setDr(f,'Tip the Guard',.30);if(!FULL_fab(f))f.atk=Math.max(1,Math.floor(f.atk*.70));}
     else if(n==='Inspiring Leadership'){const knights=own.filter(x=>/(knight|paladin)/i.test(x.card?.name||'')).length;for(let i=0;i<knights;i++)buff(f,.10);if(FULL_fab(f)){for(const x of FULL_alive(own).filter(x=>/(knight|paladin)/i.test(x.card?.name||''))){const others=Math.max(0,knights-1);for(let j=0;j<others;j++)buff(x,.05)}}}
     else if(n==="King's Rule"){if(FULL_fab(f)){for(const x of FULL_alive(own)){if(x===f)continue;const hp=Math.floor(f.max*.20),atk=Math.floor(f.atk*.20);x.max+=hp;x.hp+=hp;x.atk+=atk;x._kingFirstBonus=(x._kingFirstBonus||0)+Math.floor(f.atk*.10)}}else for(const x of FULL_alive(own))if(x!==f)x.atk+=Math.floor(f.atk*.15);}
-    else if(n==='Arachnid Dominion'){for(const x of FULL_alive(own).filter(x=>/spider/i.test(x.card?.name||''))){x.atk=Math.floor(x.atk*(FULL_fab(f)?1.40:1.20));x.dr=Math.max(x.dr,FULL_fab(f)?.30:.25)}}
+    else if(n==='Arachnid Dominion'){for(const x of FULL_alive(own).filter(x=>/spider/i.test(x.card?.name||''))){x.atk=Math.floor(x.atk*(FULL_fab(f)?1.40:1.20));FULL_setDr(x,'Arachnid Dominion',FULL_fab(f)?.30:.25,f)}}
     else if(n==='Greed'&&!FULL_fab(f)){const c=own.filter(x=>x.card?.name==='Pot of Gold'&&!x.dead).length;for(let i=0;i<c;i++)buff(f,.15)}
     else if(n==='Paid Security'){const c=own.filter(x=>x.card?.weatherLock==='TravelingCaravan'&&x!==f&&!/Market Guard/i.test(x.card?.name||'')).length;for(let i=0;i<c;i++)buff(f,FULL_fab(f)?.40:.35);if(FULL_fab(f))for(const x of FULL_alive(own).filter(x=>x!==f&&x.card?.weatherLock==='TravelingCaravan'))buff(x,.15)}
     else if(n==='Solar Ward'){for(const x of FULL_alive(own))FULL_addHpShield(x,Math.floor(x.max*FULL_percent(f,.25,.50)),.10)}
@@ -79,7 +87,7 @@ teamStart=function(own,foes,cid){FULL_CONTEXT={team:f=>f.side===own[0]?.side?own
   }
 };
 
-function FULL_applyOpponentEntryAuras(entering,foes,r,ctx){for(const u of FULL_alive(foes)){if(!FULL_enabled(u,ctx))continue;if(u.ability?.name==='Event Horizon'){u.dr=Math.max(u.dr,FULL_percent(u,.10,.20));entering._umbralMark={source:u,damageDown:FULL_percent(u,.20,.35),amp:FULL_percent(u,.25,.50),hits:0};entering.atk=Math.max(1,Math.floor(entering.atk*(1-entering._umbralMark.damageDown)))}}
+function FULL_applyOpponentEntryAuras(entering,foes,r,ctx){for(const u of FULL_alive(foes)){if(!FULL_enabled(u,ctx))continue;if(u.ability?.name==='Event Horizon'){FULL_setDr(u,'Event Horizon',FULL_percent(u,.10,.20));entering._umbralMark={source:u,damageDown:FULL_percent(u,.20,.35),amp:FULL_percent(u,.25,.50),hits:0};const oldAtk=entering.atk;entering.atk=Math.max(1,Math.floor(oldAtk*(1-entering._umbralMark.damageDown)));entering._umbralMark.lostAtk=oldAtk-entering.atk}}
 }
 
 enter=function(f,t,own,foes,r,ctx){FULL_CONTEXT=ctx;FULL_initTeams(own,foes);if(!f)return;FULL_init(f);corrEntry(f,t,r,ctx);FULL_applyOpponentEntryAuras(f,foes,r,ctx);if(!FULL_enabled(f,ctx))return;const n=f.ability.name;
@@ -95,9 +103,9 @@ enter=function(f,t,own,foes,r,ctx){FULL_CONTEXT=ctx;FULL_initTeams(own,foes);if(
   else if(n==='Taxed'){const q=FULL_percent(f,.12,.15),living=FULL_alive(own);let stolen=0;for(const e of FULL_alive(foes)){const take=Math.max(0,Math.floor(e.atk*q));e.atk=Math.max(1,e.atk-take);stolen+=take}if(living.length&&stolen){const each=Math.floor(stolen/living.length);let rem=stolen-each*living.length;for(const ally of living){ally.atk+=each+(rem>0?1:0);if(rem>0)rem--}}}
   else if(n==='Ascendant War Doctrine'){for(const ally of FULL_alive(own)){ally._gunshinExtra=(ally._gunshinExtra||0)+1;if(FULL_fab(f))ally._gunshinFlat=(ally._gunshinFlat||0)+Math.floor(f.atk*.60);if(FULL_isWarriorPath(ally))buff(ally,FULL_percent(f,.30,.50))}}
   else if(n==='Crushing Depths'&&t){FULL_timedAtk(t,1-FULL_percent(f,.50,.65),FULL_fab(f)?3:2);if(FULL_fab(f))for(const x of FULL_alive(foes).filter(x=>x!==t))x.atk=Math.max(1,Math.floor(x.atk*.80))}
-  else if(n==='Crown of Embers'){f._crownPct=FULL_percent(f,.30,.45);buff(f,f._crownPct)}
+  else if(n==='Crown of Embers'){f._crownPct=FULL_percent(f,.30,.45);f._crownLoss=FULL_percent(f,.10,.15);buff(f,f._crownPct)}
   else if(n==="Heaven's Threshold")for(const x of FULL_alive(own))buffHp(x,FULL_percent(f,.10,.18));
-  else if(n==="Earth's Blessing")for(const x of FULL_alive(own)){x.dr=Math.max(x.dr,FULL_percent(f,.15,.25));if(FULL_fab(f))x._earthFirstGrowth=true}
+  else if(n==="Earth's Blessing")for(const x of FULL_alive(own)){FULL_setDr(x,"Earth's Blessing",FULL_percent(f,.15,.25),f);if(FULL_fab(f))x._earthGrowthReady=true}
   else if(n==='Inverse Law'){const oldAtk=f.atk,oldHp=f.max;f.max=Math.max(1,oldAtk);f.hp=f.max;f.atk=Math.max(1,oldHp);}
   else if(n==='Apex Dragon'){const cut=FULL_percent(f,.20,.30),aoe=FULL_percent(f,.35,.60);for(const x of FULL_alive(foes)){x.atk=Math.max(1,Math.floor(x.atk*(1-cut)));FULL_effectDamage(f,x,Math.floor(f.atk*aoe),r,ctx,true,{aoe:true});if(FULL_fab(f))x._vorrathAmpSource=f}}
   else if(n==='Behemoth’s Wrath')buff(f,FULL_percent(f,.50,.80));
@@ -107,6 +115,6 @@ enter=function(f,t,own,foes,r,ctx){FULL_CONTEXT=ctx;FULL_initTeams(own,foes);if(
   else if(n==='Permafrost'&&t)FULL_freeze(t,1);
   else if(n==='Endless Winter'&&FULL_alive(foes).some(x=>x.frozen))buff(f,FULL_fab(f)?.50:.30);
   else if(n==='Necrotic Bloom'){const bh=FULL_percent(f,.15,.40),healPct=FULL_percent(f,.20,.30);for(const x of FULL_alive(own)){const old=x.max;buffHp(x,bh);heal(x,Math.floor(x.max*healPct));if(x.hp>x.max)x.hp=x.max}}
-  else if(n==='Death’s Whisper'&&t){const hit=FULL_percent(f,.35,.45),amp=FULL_percent(f,.25,.35),pct=FULL_percent(f,.20,.30);FULL_effectDamage(f,t,Math.floor(f.atk*hit),r,ctx);t._deathWhisper={source:f,amp,pct};t._deathWhisperExpires=(t.turn||0)+2;t._ampTaken=Math.max(t._ampTaken||0,amp)}
-  else if(n==='Melodic Revival'){f.max+=f.atk;f.hp+=f.atk;if(FULL_fab(f))f.dr=Math.max(f.dr,.30)}
-  else if(n==='Nullify'&&FULL_fab(f))f.dr=Math.max(f.dr,.15);
+  else if(n==='Death’s Whisper'&&t){const hit=FULL_percent(f,.35,.45),amp=FULL_percent(f,.25,.35),pct=FULL_percent(f,.20,.30);t._deathWhisper={source:f,amp,pct};t._deathWhisperExpires=(t.turn||0)+2;FULL_effectDamage(f,t,Math.floor(f.atk*hit),r,ctx);t._ampTaken=Math.max(t._ampTaken||0,amp)}
+  else if(n==='Melodic Revival'){f.max+=f.atk;f.hp+=f.atk;if(FULL_fab(f))FULL_setDr(f,'Melodic Revival',.30)}
+  else if(n==='Nullify'&&FULL_fab(f))FULL_setDr(f,'Nullify',.15);

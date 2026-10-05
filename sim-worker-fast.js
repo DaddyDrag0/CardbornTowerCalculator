@@ -17,4 +17,4 @@ self.postMessage=function(message,transfer){
   return transfer!==undefined?FAST_nativePostMessage(message,transfer):FAST_nativePostMessage(message);
 };
 
-importScripts('./sim-worker.js?v=54');
+importScripts('./sim-worker.js?v=55');

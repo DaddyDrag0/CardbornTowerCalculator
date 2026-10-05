@@ -1,6 +1,6 @@
 {
   "name": "cardborn-tower-calculator",
   "private": true,
-  "scripts": { "test": "node tests/combat-update.cjs" },
+  "scripts": { "test": "node tests/combat-update.cjs && node tests/ability-audit.cjs" },
   "devDependencies": { "jsdom": "^29.0.0" }
 }
