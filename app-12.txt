@@ -139,7 +139,7 @@ PROGRESS_createWorkers=function(count){
   if(typeof Worker!=='function')return[];
   const out=[];
   try{
-    for(let i=0;i<count;i++)out.push(new Worker('./sim-worker.js?v=27'));
+    for(let i=0;i<count;i++)out.push(new Worker('./sim-worker.js?v=51'));
     return out;
   }catch(err){
     out.forEach(w=>{try{w.terminate()}catch(_){}});

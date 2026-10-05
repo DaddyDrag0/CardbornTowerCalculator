@@ -1,6 +1,6 @@
 // Depth-style Infinite Tower ban presets.
 // Four independent ban layouts are saved locally. Normal mode can actively use up
-// to 3 bans; Experimental can use up to 10. Experimental-only tail bans are kept
+// to 6 unlocked bans; Experimental can use up to 10. Experimental-only tail bans are kept
 // when temporarily switching back to normal mode instead of being deleted.
 
 const BAN_PRESET_STORE='cardborn-ban-presets-v1';
@@ -16,17 +16,17 @@ function BAN_PRESET_sanitize(list){
 function BAN_PRESET_normalize(raw){
   if(Array.isArray(raw)){
     const bans=BAN_PRESET_sanitize(raw);
-    return{bans,normalCount:Math.min(3,bans.length)};
+    return{bans,normalCount:Math.min(MAX_GAME_BANS,bans.length)};
   }
   const bans=BAN_PRESET_sanitize(raw?.bans),savedCount=Number(raw?.normalCount);
-  const normalCount=Number.isFinite(savedCount)?Math.max(0,Math.min(3,bans.length,Math.floor(savedCount))):Math.min(3,bans.length);
+  const normalCount=Number.isFinite(savedCount)?Math.max(0,Math.min(MAX_GAME_BANS,bans.length,Math.floor(savedCount))):Math.min(MAX_GAME_BANS,bans.length);
   return{bans,normalCount};
 }
 function BAN_PRESET_active(){return state.banPresets[state.activeBanPreset]||{bans:[],normalCount:0}}
-function BAN_PRESET_limit(){return state.experimentalBans?10:3}
+function BAN_PRESET_limit(){return EXPERIMENTAL_limit()}
 function BAN_PRESET_visible(preset=BAN_PRESET_active()){
   const p=BAN_PRESET_normalize(preset);
-  return state.experimentalBans?p.bans.slice(0,10):p.bans.slice(0,p.normalCount);
+  return state.experimentalBans?p.bans.slice(0,10):p.bans.slice(0,Math.min(p.normalCount,GAME_BAN_limit()));
 }
 function BAN_PRESET_apply(){state.bans=BAN_PRESET_visible()}
 function BAN_PRESET_invalidate(){state.teams.forEach(t=>t.result=null)}
@@ -37,11 +37,11 @@ function BAN_PRESET_syncFromState(){
   const i=state.activeBanPreset,prior=BAN_PRESET_normalize(state.banPresets[i]),visible=BAN_PRESET_sanitize(state.bans);
   if(state.experimentalBans){
     prior.bans=visible.slice(0,10);
-    prior.normalCount=Math.min(prior.normalCount,prior.bans.length,3);
+    prior.normalCount=Math.min(prior.normalCount,prior.bans.length,MAX_GAME_BANS);
   }else{
-    const current=visible.slice(0,3),tail=prior.bans.slice(prior.normalCount).filter(n=>!current.includes(n));
-    prior.bans=BAN_PRESET_sanitize([...current,...tail]);
-    prior.normalCount=current.length;
+    const current=visible.slice(0,GAME_BAN_limit()),hiddenNormal=prior.bans.slice(GAME_BAN_limit(),prior.normalCount).filter(n=>!current.includes(n)),tail=prior.bans.slice(prior.normalCount).filter(n=>!current.includes(n)&&!hiddenNormal.includes(n));
+    prior.bans=BAN_PRESET_sanitize([...current,...hiddenNormal,...tail]);
+    prior.normalCount=current.length+hiddenNormal.length;
   }
   state.banPresets[i]=prior;
 }
@@ -56,7 +56,7 @@ load=function(){
     state.banPresets=Array.from({length:4},(_,i)=>BAN_PRESET_normalize(saved.presets[i]));
     state.activeBanPreset=Math.max(0,Math.min(3,Math.floor(Number(saved.active)||0)));
   }else{
-    state.banPresets=Array.from({length:4},(_,i)=>i===0?{bans:migrated,normalCount:Math.min(3,migrated.length)}:{bans:[],normalCount:0});
+    state.banPresets=Array.from({length:4},(_,i)=>i===0?{bans:migrated,normalCount:Math.min(MAX_GAME_BANS,migrated.length)}:{bans:[],normalCount:0});
     state.activeBanPreset=0;
   }
   BAN_PRESET_apply();
@@ -78,7 +78,7 @@ function BAN_PRESET_decode(code){
   const raw=String(code||'').trim();if(!raw.startsWith('CBTB1-'))throw new Error('Ban code must start with CBTB1-');
   let payload;try{const binary=atob(raw.slice(6)),bytes=Uint8Array.from(binary,ch=>ch.charCodeAt(0));payload=JSON.parse(new TextDecoder().decode(bytes))}catch(_){throw new Error('Invalid ban code')}
   if(!payload||payload.v!==1||!Array.isArray(payload.bans))throw new Error('Unsupported ban code');
-  const bans=BAN_PRESET_sanitize(payload.bans),normalCount=Math.max(0,Math.min(3,bans.length,Number.isFinite(Number(payload.normalCount))?Math.floor(Number(payload.normalCount)):Math.min(3,bans.length)));
+  const bans=BAN_PRESET_sanitize(payload.bans),normalCount=Math.max(0,Math.min(MAX_GAME_BANS,bans.length,Number.isFinite(Number(payload.normalCount))?Math.floor(Number(payload.normalCount)):Math.min(MAX_GAME_BANS,bans.length)));
   return{bans,normalCount};
 }
 
@@ -86,7 +86,7 @@ function BAN_PRESET_decorate(){
   const box=root.querySelector('.depth-ban-box');if(!box)return;
   box.querySelector('[data-ban-presets]')?.remove();
   const limit=BAN_PRESET_limit(),wrap=document.createElement('div');wrap.className='depth-ban-layouts tower-ban-presets';wrap.dataset.banPresets='';
-  wrap.innerHTML=`<div class="depth-ban-layout-tabs">${state.banPresets.map((raw,i)=>{const p=BAN_PRESET_normalize(raw),count=state.experimentalBans?p.bans.length:p.normalCount,hidden=!state.experimentalBans&&p.bans.length>p.normalCount;return`<button type="button" data-ban-preset="${i}" class="${state.activeBanPreset===i?'on':''}" ${hidden?`title="${p.bans.length} total bans saved; ${p.normalCount} active outside Experimental mode"`:''}><span>Ban ${i+1}</span><small>${count}/${limit}${hidden?' +':''}</small></button>`}).join('')}</div><div class="depth-ban-layout-actions"><button type="button" data-ban-preset-export>Export Bans</button><button type="button" data-ban-preset-import>Import Bans</button></div>`;
+  wrap.innerHTML=`<div class="depth-ban-layout-tabs">${state.banPresets.map((raw,i)=>{const p=BAN_PRESET_normalize(raw),count=BAN_PRESET_visible(p).length,hidden=!state.experimentalBans&&p.bans.length>BAN_PRESET_visible(p).length;return`<button type="button" data-ban-preset="${i}" class="${state.activeBanPreset===i?'on':''}" ${hidden?`title="${p.bans.length} total bans saved; ${BAN_PRESET_visible(p).length} active with the current slot limit"`:''}><span>Ban ${i+1}</span><small>${count}/${limit}${hidden?' +':''}</small></button>`}).join('')}</div><div class="depth-ban-layout-actions"><button type="button" data-ban-preset-export>Export Bans</button><button type="button" data-ban-preset-import>Import Bans</button></div>`;
   const head=box.querySelector('.depth-ban-head');box.insertBefore(wrap,head||box.firstChild);
   const title=head?.querySelector('span');if(title)title.textContent=`Infinite Tower bans · Ban ${state.activeBanPreset+1}`;
 }

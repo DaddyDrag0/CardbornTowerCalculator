@@ -1,0 +1,256 @@
+// Void Tower update, from the October 5, 2026 place export (version 3786).
+// Client definitions are available; the server combat implementation is absent.
+// The user authorized estimated Fracture values for release on October 5, 2026.
+// Only the three-stack Shatter threshold is confirmed by the update log.
+const VOID_FRACTURE_RULES={
+  shatterStacks:3,
+  damagePerStack:.10,
+  healingReductionPerStack:.10,
+  shatterDamage:.50,
+  shatterBase:'sourceAttack',
+  maxStacks:5,
+  estimated:true
+};
+window.CARDBORN_VOID_RULES=VOID_FRACTURE_RULES;
+function VOID_rulesReady(){
+  return ['damagePerStack','healingReductionPerStack','shatterDamage','maxStacks'].every(k=>Number.isFinite(VOID_FRACTURE_RULES[k]))&&['sourceAttack','targetMaxHealth'].includes(VOID_FRACTURE_RULES.shatterBase);
+}
+function VOID_requireRules(){
+  if(!VOID_rulesReady())throw Error('Void Fracture requires valid damage, healing reduction, Shatter damage/basis, and stack cap before World 8 simulations can run.');
+}
+const VOID_WORLD_NAMES=new Set(CARDS.filter(c=>c.badgeRequired==='VoidWorldBadge').map(c=>c.name));
+const VOID_FRACTURE_ABILITIES=new Set(['Dust of Nothing','Impossible Route','Unwritten Requiem','Beyond the Horizon','History Ends Here']);
+function VOID_phaseNames(fn,extra=[]){return new Set([...String(fn).matchAll(/\bn\s*===\s*(['"])(.*?)\1/g)].map(m=>m[2]).concat(extra))}
+const VOID_ENTRY_NAMES=VOID_phaseNames(COSMIC_baseEnter,['Starfall Barrage','Bloomburst','Overdrive Ejection','Point of No Return','Impossible Route','History Ends Here','Stolen Verse']);
+const VOID_TURN_NAMES=VOID_phaseNames(FULL_turnStartCore,['Melodic Revival','Renewal of a New Cycle','Point of No Return','Unwritten Requiem']);
+const VOID_DEFENSE_NAMES=VOID_phaseNames(incoming);
+const VOID_PREP_NAMES=VOID_phaseNames(MULTI_basePrepareHit,['Beyond the Horizon']);
+const VOID_AFTER_NAMES=VOID_phaseNames(FULL_afterAttackGrowth);
+const VOID_PRIMARY_NAMES=new Set(['Dust of Nothing','History Ends Here','Impossible Route','Beyond the Horizon']);
+function VOID_history(source,ctx){
+  const active=FULL_active(FULL_team(source,ctx));
+  return active&&FULL_enabled(active,ctx)&&active.ability?.name==='History Ends Here'?active:null;
+}
+function VOID_shatter(source,target,r,ctx){
+  if(!source||!target||target.dead||target.hp<=0)return false;
+  const history=VOID_history(source,ctx),turn=Number(ctx?.turn)||0;
+  if(history&&target._voidLastShatter!=null&&turn-target._voidLastShatter<2)return false;
+  target._voidLastShatter=turn;
+  target._voidShatterCount=(target._voidShatterCount||0)+1;
+  if(!history)target._voidFracture=0;
+  const basis=VOID_FRACTURE_RULES.shatterBase==='targetMaxHealth'?target.max:source.atk;
+  FULL_effectDamage(source,target,Math.floor(basis*VOID_FRACTURE_RULES.shatterDamage),r,ctx,false,{voidShatter:true});
+  for(const choir of FULL_alive(FULL_team(source,ctx)).filter(x=>FULL_enabled(x,ctx)&&x.ability?.name==='Unwritten Requiem')){
+    for(const ally of FULL_alive(FULL_team(choir,ctx))){
+      heal(ally,Math.floor(ally.max*(FULL_fab(choir)?.15:.10)));
+      if(VOID_WORLD_NAMES.has(ally.card?.name)){
+        const prior=ally._voidChoirBonus||0,next=Math.min(FULL_fab(choir)?.60:.50,prior+.10);
+        if(next>prior){ally.atk=Math.floor(ally.atk*(1+next)/(1+prior));ally._voidChoirBonus=next}
+      }
+    }
+  }
+  if(history&&!target.dead&&target.hp>0){
+    target._voidCancelNextAbility=true;
+    FULL_effectDamage(history,target,Math.floor(history.atk*(FULL_fab(history)?1.40:1)),r,ctx,false,{voidHistory:true});
+  }
+  return true;
+}
+function VOID_addFracture(source,target,stacks,r,ctx){
+  if(!target||target.dead||target.hp<=0||stacks<=0)return false;
+  VOID_requireRules();
+  target._voidFracture=Math.min(VOID_FRACTURE_RULES.maxStacks,(target._voidFracture||0)+Math.floor(stacks));
+  return target._voidFracture>=VOID_FRACTURE_RULES.shatterStacks&&VOID_shatter(source,target,r,ctx);
+}
+function VOID_cancelActivation(f,callback){
+  if(!f?._voidCancelNextAbility)return callback();
+  f._voidCancelNextAbility=false;
+  const ability=f.ability,silenced=f.silenced;
+  f.ability={name:'',desc:''};f.silenced=true;
+  try{return callback()}finally{f.ability=ability;f.silenced=silenced}
+}
+
+const VOID_baseHeal=heal;
+heal=function(f,n){
+  if(f?._voidFracture){VOID_requireRules();n=Math.floor(n*Math.max(0,1-f._voidFracture*VOID_FRACTURE_RULES.healingReductionPerStack))}
+  return VOID_baseHeal(f,n);
+};
+const VOID_baseIncoming=incoming;
+incoming=function(t,a,d,r,ctx,ignore=false,meta={}){
+  if(t?._voidFracture){VOID_requireRules();d=Math.floor(d*(1+t._voidFracture*VOID_FRACTURE_RULES.damagePerStack))}
+  if(!ignore&&a?.ability?.name!=='Perfect Strike'&&t?._voidCancelNextAbility&&FULL_enabled(t,ctx)&&VOID_DEFENSE_NAMES.has(t.ability?.name))return VOID_cancelActivation(t,()=>VOID_baseIncoming(t,a,d,r,ctx,ignore,meta));
+  return VOID_baseIncoming(t,a,d,r,ctx,ignore,meta);
+};
+
+const VOID_baseEnter=enter;
+enter=function(f,t,own,foes,r,ctx){
+  if(!f)return VOID_baseEnter(f,t,own,foes,r,ctx);
+  const canUse=!f._onEntryUsed&&FULL_enabled(f,ctx),name=f.ability?.name;
+  if(!canUse)return VOID_baseEnter(f,t,own,foes,r,ctx);
+  if(f._voidCancelNextAbility&&VOID_ENTRY_NAMES.has(name))return VOID_cancelActivation(f,()=>VOID_baseEnter(f,t,own,foes,r,ctx));
+  if(name==='Stolen Verse'&&!f._stolenVerse){
+    const strongest=[...FULL_alive(foes)].sort((a,b)=>(b.max+2*b.atk)-(a.max+2*a.atk))[0];
+    if(strongest){
+      if(FULL_fab(f))buff(f,.20);
+      f.ability={...strongest.ability};f._stolenVerse=true;
+      // The copied entry effect uses this physical card's one entry activation.
+      return enter(f,t,own,foes,r,ctx);
+    }
+  }
+  if(name==='Starfall Barrage'&&FULL_fab(f)){
+    f._onEntryUsed=true;FULL_CONTEXT=ctx;FULL_initTeams(own,foes);
+    corrEntry(f,t,r,ctx);FULL_applyOpponentEntryAuras(f,foes,r,ctx);
+    f._starfallBaseAtk=f.atk;f._starfallBaseMax=f.max;f._voidStarfallEntry=true;
+    try{for(const enemy of [...FULL_alive(foes)])FULL_effectDamage(f,enemy,Math.floor(f.atk*.25),r,ctx,true,{starfallEntry:true})}
+    finally{f._voidStarfallEntry=false}
+    return;
+  }
+  if(name==='Ruler Of Cardborn'&&FULL_fab(f)&&t){
+    const ability=f.ability;f.ability={name:'',desc:''};
+    try{VOID_baseEnter(f,t,own,foes,r,ctx)}finally{f.ability=ability}
+    const ownRarity=rarity(f.card,f.flags),enemyRarity=rarity(t.card,t.flags);
+    if(ownRarity>=enemyRarity)f.atk=Math.floor(f.atk*1.50);
+    if(ownRarity<=enemyRarity)buffHp(f,.75);
+    FULL_addBlock(f,1);f._creatorExtra=1;
+    return;
+  }
+  const result=VOID_baseEnter(f,t,own,foes,r,ctx);
+  if(name==='Bloomburst')for(const ally of FULL_alive(own))heal(ally,Math.floor(ally.max*(FULL_fab(f)?.20:.12)));
+  else if(name==='Overdrive Ejection')buff(f,FULL_fab(f)?2:1);
+  else if(name==='Point of No Return')f._singularityCharging=true;
+  else if(name==='Impossible Route'){
+    foes.reverse();FULL_reindex(foes);
+    for(const enemy of [...FULL_alive(foes)])VOID_addFracture(f,enemy,1,r,ctx);
+  }else if(name==='History Ends Here')for(const enemy of [...FULL_alive(foes)])VOID_addFracture(f,enemy,FULL_fab(f)?3:2,r,ctx);
+  return result;
+};
+
+const VOID_baseTurnStart=turnStart;
+turnStart=function(f,t,own,foes,r,ctx){
+  if(f?._voidCancelNextAbility&&FULL_enabled(f,ctx)&&VOID_TURN_NAMES.has(f.ability?.name)&&(f.ability?.name!=='Point of No Return'||f._singularityCharging))return VOID_cancelActivation(f,()=>VOID_baseTurnStart(f,t,own,foes,r,ctx));
+  const out=VOID_baseTurnStart(f,t,own,foes,r,ctx);
+  if(!FULL_enabled(f,ctx))return out;
+  const name=f.ability?.name;
+  if(name==='Point of No Return'&&f._singularityCharging){
+    // CardModule's normal description has no recurring pulse; its Fabled text does.
+    if(FULL_fab(f))for(const enemy of [...FULL_alive(foes)])FULL_effectDamage(f,enemy,Math.floor(f.atk*.20),r,ctx,false,{singularityPulse:true});
+    if(f.turn>=3){
+      f._singularityCharging=false;
+      for(const enemy of [...FULL_alive(foes)]){
+        FULL_effectDamage(f,enemy,Math.floor(f.atk*(FULL_fab(f)?1:.75)),r,ctx,false,{singularityBurst:true});
+        if(FULL_fab(f)&&!enemy.dead&&enemy.hp>0)enemy.atk=Math.max(1,Math.floor(enemy.atk*.80));
+      }
+    }
+  }else if(name==='Unwritten Requiem')for(const enemy of [...FULL_alive(foes)])VOID_addFracture(f,enemy,FULL_fab(f)?2:1,r,ctx);
+  return out;
+};
+
+const VOID_basePrepareHit=FULL_prepareHit;
+FULL_prepareHit=function(actor,target,foes,r,ctx,hitNo,totalHits,baseMult){
+  if(actor?._voidCancelNextAbility&&FULL_enabled(actor,ctx)&&VOID_PREP_NAMES.has(actor.ability?.name)){
+    const out=VOID_cancelActivation(actor,()=>VOID_basePrepareHit(actor,target,foes,r,ctx,hitNo,totalHits,baseMult));out.meta.voidAbilityCancelled=true;return out;
+  }
+  const out=VOID_basePrepareHit(actor,target,foes,r,ctx,hitNo,totalHits,baseMult);
+  if(FULL_enabled(actor,ctx)&&actor.ability?.name==='Beyond the Horizon')out.mult*=1+(FULL_fab(actor)?.35:.25)*(out.target?._voidFracture||0);
+  return out;
+};
+
+const VOID_baseAfter=after;
+after=function(f,t,dealt,own,foes,r,ctx,killed,meta={}){
+  if(f?._voidCancelNextAbility&&FULL_enabled(f,ctx)&&VOID_AFTER_NAMES.has(f.ability?.name))return VOID_cancelActivation(f,()=>VOID_baseAfter(f,t,dealt,own,foes,r,ctx,killed,meta));
+  if(!FULL_enabled(f,ctx)||f.ability?.name!=='Between Worlds'||!FULL_fab(f))return VOID_baseAfter(f,t,dealt,own,foes,r,ctx,killed,meta);
+  corrPost(f,t,dealt,killed);
+  const enemies=FULL_alive(foes);if(!enemies.length)return;
+  const enemy=pick(r,enemies),result=FULL_effectDamage(f,enemy,Math.floor(f.atk*.50),r,ctx);
+  if(result.killed){heal(f,Math.floor(f.max*.20));f._betweenExtra=(f._betweenExtra||0)+1}
+};
+
+const VOID_baseAfterPrimary=FULL_afterPrimaryHit;
+FULL_afterPrimaryHit=function(actor,target,dealt,killed,own,foes,r,ctx,meta,queue){
+  VOID_baseAfterPrimary(actor,target,dealt,killed,own,foes,r,ctx,meta,queue);
+  if(!FULL_enabled(actor,ctx)||meta?.voidAbilityCancelled)return;
+  const name=actor.ability?.name;
+  if(actor._voidCancelNextAbility&&VOID_PRIMARY_NAMES.has(name)){actor._voidCancelNextAbility=false;return}
+  if(name==='Dust of Nothing'){
+    const shattered=VOID_addFracture(actor,target,FULL_fab(actor)?3:2,r,ctx);
+    if(shattered&&meta?.attackKind!=='voidExtra')queue.push({mult:FULL_fab(actor)?1.10:.80,kind:'voidExtra'});
+  }else if(name==='History Ends Here')VOID_addFracture(actor,target,FULL_fab(actor)?2:1,r,ctx);
+  else if(name==='Impossible Route'&&((actor._attackCount||0)+1)%2===0&&!target.dead&&target.hp>0){
+    const stacks=target._voidFracture||0,pos=foes.indexOf(target);
+    foes.splice(pos,1);foes.push(target);target._voidFracture=0;FULL_reindex(foes);
+    const front=FULL_active(foes);if(front&&front!==target)VOID_addFracture(actor,front,stacks,r,ctx);else target._voidFracture=stacks;
+  }else if(name==='Beyond the Horizon'&&killed){
+    VOID_requireRules();
+    let stacks=target._voidFracture||0,carry=Math.max(0,(actor._voidPrimaryHit?.real||0)-(actor._voidPrimaryHit?.before||0)),strength=FULL_fab(actor)?1.75:1.50;
+    for(const enemy of [...FULL_alive(foes)]){
+      if(carry<=0&&stacks<=0)break;
+      VOID_addFracture(actor,enemy,Math.floor(stacks*strength),r,ctx);
+      if(enemy.dead)continue;
+      const hp=enemy.hp,result=FULL_effectDamage(actor,enemy,Math.floor(carry*strength),r,ctx,false,{voidCarry:true});
+      if(!result.killed)break;
+      carry=Math.max(0,(ctx._lastDamageReal||0)-hp);stacks=enemy._voidFracture||0;
+    }
+  }
+};
+
+// Track excess damage and prevent Nullwing's extra attack from recursing.
+const VOID_baseDamage=damage;
+damage=function(a,t,d,r,ctx,ignore=false,meta={}){
+  const result=VOID_baseDamage(a,t,d,r,ctx,ignore,meta);
+  if(meta.direct===true&&a)a._voidPrimaryHit={real:ctx?._lastDamageReal||0,before:ctx?._lastDamageBefore||0};
+  return result;
+};
+
+const VOID_baseDie=die;
+die=function(f,k,team,foes,r,ctx){
+  if(!f||f.dead||f.hp>0)return VOID_baseDie(f,k,team,foes,r,ctx);
+  const name=f.ability?.name,first=!f._onDeathUsed,enabled=FULL_deathEnabled(f,ctx);
+  const starfall=!!(k&&k.ability?.name==='Starfall Barrage'&&FULL_fab(k));
+  let savedKillerAbility;
+  if(starfall){savedKillerAbility=k.ability;k.ability={name:'',desc:''}}
+  let result;
+  try{result=VOID_baseDie(f,k,team,foes,r,ctx)}finally{if(savedKillerAbility)k.ability=savedKillerAbility}
+  if(result&&starfall&&k._voidStarfallEntry){
+    k.atk+=Math.floor(k._starfallBaseAtk*.40);
+    const hp=Math.floor(k._starfallBaseMax*.20);k.max+=hp;k.hp+=hp;
+  }
+  if(first&&enabled&&name==='Shadow Rebirth'&&FULL_fab(f)&&!result)for(const enemy of [...FULL_alive(foes)])if(enemy!==k)FULL_effectDamage(f,enemy,Math.floor(f.max*.30),r,ctx,true,{rebirth:true});
+  if(result&&k&&FULL_enabled(k,ctx)&&k.ability?.name==='Cataclysmic Devour'&&FULL_fab(k)){
+    const hp=Math.floor(f.max*.45)-Math.floor(f.max*.30),atk=Math.floor(f.atk*.45)-Math.floor(f.atk*.30);
+    k.max+=hp;k.hp+=hp;k.atk+=atk;
+  }
+  if(!result||!first||!enabled)return result;
+  if(name==='Bloomburst')for(const ally of FULL_alive(team)){buffHp(ally,FULL_fab(f)?.25:.15);ally.atk=Math.floor(ally.atk*(FULL_fab(f)?1.18:1.10))}
+  if(name==='Overdrive Ejection'){
+    const pool=CARDS.filter(c=>c.weatherLock==='GnomeRaid'&&!c.isSecret),summons=[];
+    for(let i=0;i<(FULL_fab(f)?2:1)&&pool.length;i++){
+      const selected=pick(r,pool);pool.splice(pool.indexOf(selected),1);
+      const summon=fighter(selected,{...f.flags},f.side,0);FULL_init(summon);if(FULL_fab(f))buff(summon,.25);summons.push(summon);
+    }
+    team.splice(team.indexOf(f)+1,0,...summons);FULL_reindex(team);
+  }
+  return result;
+};
+
+// Keep estimates distinct from confirmed game mechanics in public engine status.
+window.CARDBORN_ENGINE_STATUS={...window.CARDBORN_ENGINE_STATUS,version:51,voidFractureConfirmed:VOID_rulesReady()&&!VOID_FRACTURE_RULES.estimated,voidFractureEstimated:!!VOID_FRACTURE_RULES.estimated,maxEnemyBans:6};
+
+const VOID_baseBattle=battle;
+battle=function(pt,et,r,cid,debug=false){
+  if([...pt,...et].some(f=>VOID_FRACTURE_ABILITIES.has(f.ability?.name)))VOID_requireRules();
+  return VOID_baseBattle(pt,et,r,cid,debug);
+};
+
+const VOID_baseRender=render;
+render=function(){
+  VOID_baseRender();
+  if(VOID_rulesReady()&&!VOID_FRACTURE_RULES.estimated)return;
+  const panel=root.querySelector('.simulation-body');
+  if(panel){
+    const note=document.createElement('details');note.className='void-update-note';
+    const summary=document.createElement('summary'),description=document.createElement('p');
+    summary.textContent=VOID_rulesReady()?'Void card results use estimated Fracture values':'Void Fracture values are unavailable';
+    description.textContent=VOID_rulesReady()?`Assumed: +${VOID_FRACTURE_RULES.damagePerStack*100}% damage taken and −${VOID_FRACTURE_RULES.healingReductionPerStack*100}% healing per stack; Shatter deals ${VOID_FRACTURE_RULES.shatterDamage*100}% of the applying card’s attack; maximum ${VOID_FRACTURE_RULES.maxStacks} stacks. Shatter at ${VOID_FRACTURE_RULES.shatterStacks} stacks is confirmed. These estimates may differ from the game.`:'World 8 simulations need valid Void Fracture values before they can run.';
+    note.append(summary,description);
+    panel.prepend(note);
+  }
+};

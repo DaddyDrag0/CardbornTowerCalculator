@@ -1,4 +1,8 @@
-// Experimental ban expansion: normal mode = 3 bans, Experimental = 10 bans.
+// Normal mode uses 3 starting bans plus up to 3 purchased Void Shop slots.
+// Experimental mode retains its existing 10-ban testing limit.
+const BAN_SLOTS_KEY='cardborn-ban-slots-v1';
+const GAME_BAN_limit=()=>Math.max(3,Math.min(MAX_GAME_BANS,Math.floor(Number(state.banSlots)||3)));
+try{state.banSlots=Math.max(3,Math.min(MAX_GAME_BANS,Math.floor(Number(localStorage.getItem(BAN_SLOTS_KEY))||3)))}catch(_){}
 const EXPERIMENTAL_BANS_KEY='cardborn-experimental-bans-v1';
 state.experimentalBans=false;
 try{state.experimentalBans=localStorage.getItem(EXPERIMENTAL_BANS_KEY)==='1'}catch(_){}
@@ -10,17 +14,17 @@ load=function(){
   if(state.experimentalBans){
     try{const saved=JSON.parse(localStorage.getItem(STORE)||'null');state.bans=(saved?.bans||state.bans||[]).filter(n=>BY.has(n)&&!BY.get(n).isSecret).slice(0,10)}
     catch(_){state.bans=(state.bans||[]).slice(0,10)}
-  }else state.bans=(state.bans||[]).slice(0,3);
+  }else state.bans=(state.bans||[]).slice(0,GAME_BAN_limit());
 };
 
 const EXPERIMENTAL_baseSave=save;
 save=function(){
-  if(!state.experimentalBans&&state.bans.length>3)state.bans=state.bans.slice(0,3);
+  if(!state.experimentalBans&&state.bans.length>GAME_BAN_limit())state.bans=state.bans.slice(0,GAME_BAN_limit());
   EXPERIMENTAL_baseSave();
   try{localStorage.setItem(EXPERIMENTAL_BANS_KEY,state.experimentalBans?'1':'0')}catch(_){}
 };
 
-const EXPERIMENTAL_limit=()=>state.experimentalBans?10:3;
+const EXPERIMENTAL_limit=()=>state.experimentalBans?10:GAME_BAN_limit();
 const EXPERIMENTAL_invalidate=()=>state.teams.forEach(t=>t.result=null);
 
 function EXPERIMENTAL_decorateBans(){
@@ -32,11 +36,17 @@ function EXPERIMENTAL_decorateBans(){
     if(!toggle){toggle=document.createElement('button');toggle.type='button';toggle.dataset.experimentalBans='';toggle.className='experimental-ban-toggle';right.insertBefore(toggle,right.firstChild)}
     toggle.classList.toggle('on',!!state.experimentalBans);
     toggle.textContent=state.experimentalBans?'Experimental ON':'Experimental';
-    toggle.title='Experimental testing only: increases the enemy ban cap from 3 to 10.';
+    toggle.title='Experimental testing only: increases the enemy ban cap to 10 (beyond the in-game maximum of 6).';
     const counter=right.querySelector('b');if(counter)counter.textContent=`${count}/${limit}`;
   }
   const help=box.querySelector(':scope > small');
-  if(help)help.remove();
+  if(help)help.textContent='Three starting bans + up to three purchased Void Shop slots.';
+  if(right&&!right.querySelector('[data-ban-slots]')){
+    const select=document.createElement('select');select.dataset.banSlots='';select.setAttribute('aria-label','Unlocked enemy ban slots');select.title='Set the number of enemy ban slots you have unlocked';
+    select.innerHTML=[3,4,5,6].map(n=>`<option value="${n}" ${GAME_BAN_limit()===n?'selected':''}>${n} ban slots</option>`).join('');right.prepend(select);
+    select.disabled=!!state.experimentalBans;
+    select.addEventListener('change',()=>{BAN_PRESET_syncFromState();state.banSlots=Number(select.value);localStorage.setItem(BAN_SLOTS_KEY,String(GAME_BAN_limit()));BAN_PRESET_apply();EXPERIMENTAL_invalidate();BAN_PRESET_skipSync=true;try{save()}finally{BAN_PRESET_skipSync=false}render()});
+  }
   const search=box.querySelector('#bsearch');
   if(search){search.disabled=count>=limit;search.placeholder=count>=limit?`${limit}/${limit} bans selected`:'Search card to ban…'}
   if(state.experimentalBans){
@@ -56,7 +66,7 @@ render=function(){EXPERIMENTAL_baseRender();EXPERIMENTAL_decorateBans()};
 
 root.addEventListener('click',e=>{
   const toggle=e.target.closest('[data-experimental-bans]');
-  if(toggle){e.preventDefault();e.stopImmediatePropagation();state.experimentalBans=!state.experimentalBans;if(!state.experimentalBans&&state.bans.length>3)state.bans=state.bans.slice(0,3);EXPERIMENTAL_invalidate();save();render();return}
+  if(toggle){e.preventDefault();e.stopImmediatePropagation();state.experimentalBans=!state.experimentalBans;if(!state.experimentalBans&&state.bans.length>GAME_BAN_limit())state.bans=state.bans.slice(0,GAME_BAN_limit());EXPERIMENTAL_invalidate();save();render();return}
   const add=e.target.closest('[data-ba]');
   if(add&&state.experimentalBans){e.preventDefault();e.stopImmediatePropagation();const name=add.dataset.ba;if(state.bans.length<10&&BY.has(name)&&!BY.get(name).isSecret&&!state.bans.includes(name))state.bans.push(name);state.banQuery='';EXPERIMENTAL_invalidate();save();render()}
 },true);
