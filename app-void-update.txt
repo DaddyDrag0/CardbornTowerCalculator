@@ -232,7 +232,7 @@ die=function(f,k,team,foes,r,ctx){
 };
 
 // Keep estimates distinct from confirmed game mechanics in public engine status.
-window.CARDBORN_ENGINE_STATUS={...window.CARDBORN_ENGINE_STATUS,version:51,voidFractureConfirmed:VOID_rulesReady()&&!VOID_FRACTURE_RULES.estimated,voidFractureEstimated:!!VOID_FRACTURE_RULES.estimated,maxEnemyBans:6};
+window.CARDBORN_ENGINE_STATUS={...window.CARDBORN_ENGINE_STATUS,version:53,voidFractureConfirmed:VOID_rulesReady()&&!VOID_FRACTURE_RULES.estimated,voidFractureEstimated:!!VOID_FRACTURE_RULES.estimated,maxEnemyBans:6};
 
 const VOID_baseBattle=battle;
 battle=function(pt,et,r,cid,debug=false){

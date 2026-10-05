@@ -5,7 +5,7 @@
 state.progress=null;
 
 const PROGRESS_WORKERS=8;
-const PROGRESS_WORKER_URL='./sim-worker.js?v=51';
+const PROGRESS_WORKER_URL='./sim-worker.js?v=53';
 const PROGRESS_YIELD_MS=32;
 const PROGRESS_sleep=()=>new Promise(resolve=>setTimeout(resolve,0));
 
@@ -57,7 +57,7 @@ function PROGRESS_makeEnemy(floor,r,pool){
 }
 function PROGRESS_replayFloor(t,seed,floor,pool){
   const r=rng32(floorSeed(seed,floor)),pt=makePlayer(t),et=PROGRESS_makeEnemy(floor,r,pool);
-  return replayBattle(pt,et,r,AUTO_CORRUPTED_ABILITY,floor);
+  return replayBattle(pt,et,r,state.corruptedAbility||'',floor);
 }
 async function PROGRESS_simulateFallback(t,enemyPool,seed){
   const start=state.start,cap=state.cap;
@@ -66,7 +66,7 @@ async function PROGRESS_simulateFallback(t,enemyPool,seed){
     if(state.progress)state.progress.floor=floor;
     const r=rng32(floorSeed(seed,floor)),pt=makePlayer(t),et=PROGRESS_makeEnemy(floor,r,enemyPool);
     last=et.slice(0,4).map(x=>x.card.name);
-    const b=battle(pt,et,r,AUTO_CORRUPTED_ABILITY);
+    const b=battle(pt,et,r,state.corruptedAbility||'');
     actions+=b.actions;changes+=b.changes;
     if(!b.win){
       death=floor;

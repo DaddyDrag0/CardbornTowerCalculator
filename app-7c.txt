@@ -58,6 +58,7 @@ turnStart=function(f,t,own,foes,r,ctx){
   else if(n==='Winter’s Grasp'&&target){}
   else if(n==='Double or Nothing'){const fail=r()<(FULL_fab(f)?.35:.50);mult*=fail?0:(FULL_fab(f)?3:2)}
   else if(n==='Dragon Mother'&&f.turn%2===0){const w=BY.get('Wyrmling');if(w){const fl=flags();if(FULL_fab(f))fl.fabled=true;const z=fighter(w,fl,f.side,own.length);FULL_init(z);own.push(z);FULL_reindex(own)}}
+  else if(n==='Double Strike')attacks=2;
   else if(n==='Triple Petal Slash'){attacks=FULL_fab(f)?4:3;mult*=FULL_fab(f)?.70:.75}
   else if(n==='Near Perfection'){const opts=[];if(f.hp/f.max<.75)opts.push('heal');if(target&&target.hp>f.atk)opts.push('damage');opts.push('dodge');const use=FULL_fab(f)?[...new Set(opts)].slice(0,2):[opts[0]];for(const x of use){if(x==='heal')heal(f,Math.floor(f.max*(FULL_fab(f)?.25:.20)));if(x==='damage')mult*=1+(FULL_fab(f)?.75:.50);if(x==='dodge')f._bonusDodge=Math.max(f._bonusDodge,FULL_fab(f)?.45:.35)}}
   else if(n==='Flow State'&&f._flowOn)attacks=2;

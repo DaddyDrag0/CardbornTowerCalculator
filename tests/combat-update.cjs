@@ -7,7 +7,7 @@ const repo=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(repo,file),'utf8');
 const dataFiles=Array.from({length:5},(_,i)=>`data/cards-${i+1}.js`).concat(['data/meta.js','data/corrupted.js']);
 const mainFiles=JSON.parse(read('app-loader.js').match(/const f=(\[.*?\]),p=/s)[1].replaceAll("'",'"'));
-const expose=`window.__test={state,BY,CARDS,FABLED,flags,fighter,makePlayer,makeEnemy,rng32,floorSeed,ready,save,load,code,decode,stats,ability,battle,enter,turnStart,incoming,damage,die,heal,FULL_prepareHit,FULL_afterPrimaryHit,FULL_effectDamage,FULL_active,VOID_addFracture,VOID_rulesReady,VOID_FRACTURE_RULES,BAN_PRESET_encode,BAN_PRESET_decode,BAN_PRESET_apply,BAN_PRESET_syncFromState,BAN_PRESET_visible,GAME_BAN_limit,EXPERIMENTAL_limit,setContext:ctx=>FULL_CONTEXT=ctx};`;
+const expose=`window.__test={state,BY,CARDS,FABLED,flags,fighter,makePlayer,makeEnemy,rng32,floorSeed,ready,save,load,code,decode,stats,ability,simulate,battle,enter,turnStart,incoming,damage,die,heal,FULL_prepareHit,FULL_afterPrimaryHit,FULL_effectDamage,FULL_active,VOID_addFracture,VOID_rulesReady,VOID_FRACTURE_RULES,BAN_PRESET_encode,BAN_PRESET_decode,BAN_PRESET_apply,BAN_PRESET_syncFromState,BAN_PRESET_visible,GAME_BAN_limit,EXPERIMENTAL_limit,setContext:ctx=>FULL_CONTEXT=ctx};`;
 
 function page(saved={}){
   const errors=[];
@@ -64,6 +64,20 @@ test('Three starting bans, six purchased bans, hidden preset tails, and import',
   t.state.banSlots=6;t.BAN_PRESET_apply();assert.equal(t.state.bans.length,6);
   t.state.experimentalBans=true;t.state.bans=bans;t.BAN_PRESET_syncFromState();t.state.experimentalBans=false;t.BAN_PRESET_apply();assert.equal(t.state.bans.length,6);assert.equal(t.state.banPresets[0].bans.length,8);
 });
+test('Normal and Fabled Double Strike defeat an enemy before it can counterattack',()=>{
+  for(const fabled of [false,true]){
+    const a=fighter(t,'Berserker','p',100,100,fabled),b=fighter(t,'Peasant','e',180,1000);
+    const out=t.battle([a],[b],t.rng32(123),'');
+    assert.equal(out.win,true);assert.equal(out.actions,2);assert.equal(a.hp,100);
+  }
+});
+
+test('Unshaken Form still blocks the second Double Strike hit',()=>{
+  const a=fighter(t,'Berserker','p',100,100),b=fighter(t,'Young Disciple','e',180,1000);
+  const out=t.battle([a],[b],t.rng32(123),'');
+  assert.equal(out.win,false);assert.equal(b.hp,80);
+});
+
 test('Nihilus normal burst occurs on its third turn and charging DR expires',()=>{
   const a=fighter(t,'Nihilus, the Final Horizon'),b=fighter(t,'Peasant','e'),ctx=context(t,[a],[b]);
   t.enter(a,b,[a],[b],r,ctx);assert.equal(t.incoming(a,b,1000,r,ctx),800);
@@ -190,6 +204,16 @@ async function worker(){
     const result=await vm.runInContext(`self.__cardbornChildRun({team:{cards:[{name:'Nihilus, the Final Horizon',flags:{fabled:true,void:true}},{name:'Aurelion',flags:{}},{name:'The Creator',flags:{fabled:true}},{name:'Verdant Worm',flags:{}}]},start:1,cap:1,seed:123,speed:2.5,bans:[]})`,w.ctx);
     test('Child worker boots the complete current engine and returns finite results',()=>{assert.equal(result.seed,123);assert.ok(Number.isFinite(result.actions));assert.ok(Number.isFinite(result.seconds));assert.equal(w.messages.some(m=>m.type==='ready'),true)});
     test('Page and child worker load identical released Fracture estimates',()=>{assert.deepEqual(JSON.parse(JSON.stringify(w.sandbox.__test.VOID_FRACTURE_RULES)),JSON.parse(JSON.stringify(t.VOID_FRACTURE_RULES)))});
+    const screenshotTeam={cards:['Berserker','Necromancer','Storm Giant','Flare King'].map((name,i)=>({name,flags:{shiny:i<2,awakened:i===0||i===2,fabled:i===1,corrupted:i<3,void:false}}))};
+    t.state.teams[0].cards=screenshotTeam.cards;t.state.start=1;t.state.cap=1100;t.state.bans=['Burrow Bomber'];
+    for(const corruptedAbility of ['', 'CursedRetribution']){
+      t.state.corruptedAbility=corruptedAbility;
+      const pageRun=t.simulate(0,17),childRun=await vm.runInContext(`self.__cardbornChildRun(${JSON.stringify({team:screenshotTeam,start:1,cap:1100,seed:17,speed:2.5,bans:['Burrow Bomber'],corruptedAbility})})`,w.ctx);
+      test(`Screenshot team full-run page/worker parity, ability ${corruptedAbility||'none'}`,()=>{
+        for(const key of ['cleared','death','actions','changes','last'])assert.deepEqual(JSON.parse(JSON.stringify(childRun[key])),JSON.parse(JSON.stringify(pageRun[key])));
+      });
+    }
+
     const groups=[['Nihilus, the Final Horizon','Aurelion','The Creator','Verdant Worm'],['Nullwing Harvester','Choir of the Unmade','Orphax','Vaeloryn, The Last'],['The Unwritten','The Grand Contraption','Cosmic Dragon','Rift Dragon']];
     for(const names of groups)for(const seed of [17,93,405]){
       const foes=['Vaeloryn, The Last','Arcane Overlord','Dread Lord','World Eater'];
