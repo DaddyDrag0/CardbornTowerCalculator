@@ -1,6 +1,7 @@
 name: Deploy Cardborn site
 
 on:
+  pull_request:
   push:
     branches: [main]
   workflow_dispatch:
@@ -11,11 +12,28 @@ permissions:
   id-token: write
 
 concurrency:
-  group: github-pages
+  group: github-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install test dependencies
+        run: npm ci
+      - name: Verify calculator
+        run: npm test
   deploy:
+    if: github.event_name != 'pull_request'
+    needs: test
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

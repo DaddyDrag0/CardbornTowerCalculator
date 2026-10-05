@@ -1,0 +1,1665 @@
+{
+  "source": {
+    "file": "225x Luck Cardborn RNG.rbxl",
+    "placeVersion": 3786,
+    "sha256": "ba7ad2c92039807c5e3220df79b83c717f3c399496b11aa27c751ce8040ad66d",
+    "date": "2026-10-05",
+    "serverScriptsIncluded": false
+  },
+  "skillTreeBranches": [
+    {
+      "Key": "Fortune",
+      "Name": "Fortune",
+      "Lane": -3,
+      "Color": [
+        105,
+        215,
+        125
+      ],
+      "Dir": [
+        -0.98,
+        -0.2
+      ],
+      "Core": [
+        {
+          "Name": "Green Thread",
+          "Desc": "+2 Luck.",
+          "Bonus": {
+            "Luck": 2
+          }
+        },
+        {
+          "Name": "Fortunate Step",
+          "Desc": "+2 Luck.",
+          "Bonus": {
+            "Luck": 2
+          }
+        },
+        {
+          "Name": "Crowned Clover",
+          "Desc": "+3 Luck. Fate and Insight are now both available.",
+          "Bonus": {
+            "Luck": 3
+          }
+        }
+      ],
+      "Paths": [
+        {
+          "Key": "Fate",
+          "Name": "Fate",
+          "Side": -1,
+          "Nodes": [
+            {
+              "Name": "Fated Hand",
+              "Desc": "Fate: +3 Luck.",
+              "Bonus": {
+                "Luck": 3
+              }
+            },
+            {
+              "Name": "House Advantage",
+              "Desc": "+5 Luck.",
+              "Bonus": {
+                "Luck": 5
+              }
+            },
+            {
+              "Name": "Fatebender",
+              "Desc": "+4% Luck.",
+              "PercentBonus": {
+                "Luck": 0.04
+              }
+            },
+            {
+              "Name": "Destiny's Chosen",
+              "Desc": "Fate capstone: +8 Luck and +1% Luck.",
+              "Bonus": {
+                "Luck": 8
+              },
+              "PercentBonus": {
+                "Luck": 0.01
+              }
+            }
+          ]
+        },
+        {
+          "Key": "Insight",
+          "Name": "Insight",
+          "Side": 1,
+          "Nodes": [
+            {
+              "Name": "Second Sight",
+              "Desc": "Insight: +2 Luck and +3% Lucky Hand chance.",
+              "Bonus": {
+                "Luck": 2,
+                "LuckyHandChance": 0.03
+              }
+            },
+            {
+              "Name": "Dealer's Instinct",
+              "Desc": "+2 Luck and +5% Lucky Hand chance.",
+              "Bonus": {
+                "Luck": 2,
+                "LuckyHandChance": 0.05
+              }
+            },
+            {
+              "Name": "Perfect Draw",
+              "Desc": "+4 Luck and +8% Lucky Hand chance.",
+              "Bonus": {
+                "Luck": 4,
+                "LuckyHandChance": 0.08
+              }
+            },
+            {
+              "Name": "Read the Future",
+              "Desc": "Insight capstone: +3% Luck and +4% Lucky Hand chance.",
+              "Bonus": {
+                "LuckyHandChance": 0.04
+              },
+              "PercentBonus": {
+                "Luck": 0.03
+              }
+            }
+          ]
+        }
+      ],
+      "Mastery": {
+        "Name": "Fortune Incarnate",
+        "Desc": "Fortune mastery: +5 Luck, +2% Luck, and +3% Lucky Hand chance.",
+        "Bonus": {
+          "Luck": 5,
+          "LuckyHandChance": 0.03
+        },
+        "PercentBonus": {
+          "Luck": 0.02
+        }
+      }
+    },
+    {
+      "Key": "Velocity",
+      "Name": "Velocity",
+      "Lane": -2,
+      "Color": [
+        95,
+        190,
+        255
+      ],
+      "Dir": [
+        -0.7,
+        -0.71
+      ],
+      "Core": [
+        {
+          "Name": "Quick Hands",
+          "Desc": "+0.02 Roll Speed.",
+          "Bonus": {
+            "RollSpeed": 0.02
+          }
+        },
+        {
+          "Name": "Rolling Rhythm",
+          "Desc": "+0.02 Roll Speed.",
+          "Bonus": {
+            "RollSpeed": 0.02
+          }
+        },
+        {
+          "Name": "Split Second",
+          "Desc": "+2% Double Roll chance. Tempo and Multiplicity are now both available.",
+          "Bonus": {
+            "DoubleRollChance": 0.02
+          }
+        }
+      ],
+      "Paths": [
+        {
+          "Key": "Tempo",
+          "Name": "Tempo",
+          "Side": -1,
+          "Nodes": [
+            {
+              "Name": "Rapid Draw",
+              "Desc": "Tempo: +0.03 Roll Speed.",
+              "Bonus": {
+                "RollSpeed": 0.03
+              }
+            },
+            {
+              "Name": "Blur",
+              "Desc": "+0.04 Roll Speed.",
+              "Bonus": {
+                "RollSpeed": 0.04
+              }
+            },
+            {
+              "Name": "Unbound Tempo",
+              "Desc": "+0.07 Roll Speed and +4% Roll Twice chance.",
+              "Bonus": {
+                "RollSpeed": 0.07,
+                "RollTwiceChance": 0.04
+              }
+            },
+            {
+              "Name": "Beyond Time",
+              "Desc": "Tempo capstone: +0.03 Roll Speed and +2% Roll Twice chance.",
+              "Bonus": {
+                "RollSpeed": 0.03,
+                "RollTwiceChance": 0.02
+              }
+            }
+          ]
+        },
+        {
+          "Key": "Multiplicity",
+          "Name": "Multiplicity",
+          "Side": 1,
+          "Nodes": [
+            {
+              "Name": "Paired Fate",
+              "Desc": "Multiplicity: +3% Double Roll chance.",
+              "Bonus": {
+                "DoubleRollChance": 0.03
+              }
+            },
+            {
+              "Name": "Overflow",
+              "Desc": "+4% Double Roll and +1% Triple Roll chance.",
+              "Bonus": {
+                "DoubleRollChance": 0.04,
+                "TripleRollChance": 0.01
+              }
+            },
+            {
+              "Name": "Many Worlds",
+              "Desc": "+6% Double Roll, +2% Triple Roll, and +3% Roll Twice chance.",
+              "Bonus": {
+                "DoubleRollChance": 0.06,
+                "TripleRollChance": 0.02,
+                "RollTwiceChance": 0.03
+              }
+            },
+            {
+              "Name": "Infinite Hands",
+              "Desc": "Multiplicity capstone: +3% Double Roll and +2% Roll Twice chance.",
+              "Bonus": {
+                "DoubleRollChance": 0.03,
+                "RollTwiceChance": 0.02
+              }
+            }
+          ]
+        }
+      ],
+      "Mastery": {
+        "Name": "Master of Moments",
+        "Desc": "Velocity mastery: +2% Double Roll, +1% Triple Roll, +2% Roll Twice chance, and +0.02 Roll Speed.",
+        "Bonus": {
+          "DoubleRollChance": 0.02,
+          "TripleRollChance": 0.01,
+          "RollTwiceChance": 0.02,
+          "RollSpeed": 0.02
+        }
+      }
+    },
+    {
+      "Key": "Radiance",
+      "Name": "Radiance",
+      "Lane": -1,
+      "Color": [
+        225,
+        145,
+        255
+      ],
+      "Dir": [
+        -0.24,
+        -0.97
+      ],
+      "Core": [
+        {
+          "Name": "Glimmer",
+          "Desc": "+0.20 Shiny Luck.",
+          "Bonus": {
+            "ShinyLuck": 0.2
+          }
+        },
+        {
+          "Name": "Lucid Spark",
+          "Desc": "+0.25 Awakened Luck.",
+          "Bonus": {
+            "AwakenedLuck": 0.25
+          }
+        },
+        {
+          "Name": "Prismatic Focus",
+          "Desc": "+2 Luck. Luster and Awakening are now both available.",
+          "Bonus": {
+            "Luck": 2
+          }
+        }
+      ],
+      "Paths": [
+        {
+          "Key": "Luster",
+          "Name": "Luster",
+          "Side": -1,
+          "Nodes": [
+            {
+              "Name": "Gilded Vein",
+              "Desc": "Luster: +0.25 Shiny Luck.",
+              "Bonus": {
+                "ShinyLuck": 0.25
+              }
+            },
+            {
+              "Name": "Mirror Bloom",
+              "Desc": "+0.35 Shiny Luck.",
+              "Bonus": {
+                "ShinyLuck": 0.35
+              }
+            },
+            {
+              "Name": "Aurora Heart",
+              "Desc": "+4% Shiny Luck.",
+              "PercentBonus": {
+                "ShinyLuck": 0.04
+              }
+            },
+            {
+              "Name": "Living Aurora",
+              "Desc": "Luster capstone: +0.50 Shiny Luck and +3 Luck.",
+              "Bonus": {
+                "ShinyLuck": 0.5,
+                "Luck": 3
+              }
+            }
+          ]
+        },
+        {
+          "Key": "Awakening",
+          "Name": "Awakening",
+          "Side": 1,
+          "Nodes": [
+            {
+              "Name": "Lucid Trance",
+              "Desc": "Awakening: +0.30 Awakened Luck.",
+              "Bonus": {
+                "AwakenedLuck": 0.3
+              }
+            },
+            {
+              "Name": "Waking Star",
+              "Desc": "+0.45 Awakened Luck.",
+              "Bonus": {
+                "AwakenedLuck": 0.45
+              }
+            },
+            {
+              "Name": "Ascendant Rite",
+              "Desc": "+4% Awakened Luck.",
+              "PercentBonus": {
+                "AwakenedLuck": 0.04
+              }
+            },
+            {
+              "Name": "Lucid Apotheosis",
+              "Desc": "Awakening capstone: +0.65 Awakened Luck and +3 Luck.",
+              "Bonus": {
+                "AwakenedLuck": 0.65,
+                "Luck": 3
+              }
+            }
+          ]
+        }
+      ],
+      "Mastery": {
+        "Name": "Prismatic Soul",
+        "Desc": "Radiance mastery: +0.30 Shiny Luck, +0.35 Awakened Luck, and +3 Luck.",
+        "Bonus": {
+          "ShinyLuck": 0.3,
+          "AwakenedLuck": 0.35,
+          "Luck": 3
+        }
+      }
+    },
+    {
+      "Key": "Mythos",
+      "Name": "Mythos",
+      "Lane": 1,
+      "Color": [
+        255,
+        195,
+        90
+      ],
+      "Dir": [
+        0.24,
+        -0.97
+      ],
+      "Core": [
+        {
+          "Id": "V2_MYTHOS_CORE_1",
+          "Name": "Old Tale",
+          "Desc": "+0.35 Fabled Luck.",
+          "Bonus": {
+            "FabledLuck": 0.35
+          }
+        },
+        {
+          "Id": "V2_MYTHOS_CORE_3",
+          "Name": "Forbidden Chronicle",
+          "Desc": "+2 Luck.",
+          "Bonus": {
+            "Luck": 2
+          }
+        },
+        {
+          "Id": "V2_MYTHOS_LEGEND_1",
+          "Name": "Golden Thread",
+          "Desc": "+0.50 Fabled Luck. Saga and Prophecy are now both available.",
+          "Bonus": {
+            "FabledLuck": 0.5
+          }
+        }
+      ],
+      "Paths": [
+        {
+          "Key": "Saga",
+          "Name": "Saga",
+          "Side": -1,
+          "Nodes": [
+            {
+              "Id": "V2_MYTHOS_LEGEND_2",
+              "Name": "Epic Verse",
+              "Desc": "Saga: +0.65 Fabled Luck.",
+              "Bonus": {
+                "FabledLuck": 0.65
+              }
+            },
+            {
+              "Id": "V2_MYTHOS_LEGEND_3",
+              "Name": "Sagaweaver",
+              "Desc": "+0.90 Fabled Luck.",
+              "Bonus": {
+                "FabledLuck": 0.9
+              }
+            },
+            {
+              "Id": "V2_MYTHOS_LEGEND_4",
+              "Name": "Living Legend",
+              "Desc": "+4% Fabled Luck and +2 Luck.",
+              "Bonus": {
+                "Luck": 2
+              },
+              "PercentBonus": {
+                "FabledLuck": 0.04
+              }
+            },
+            {
+              "Id": "V3_MYTHOS_MASTERY",
+              "Name": "Myth Made Flesh",
+              "Desc": "Saga capstone: +0.65 Fabled Luck, +0.45 Corrupted Luck, and +3 Luck.",
+              "Bonus": {
+                "FabledLuck": 0.65,
+                "CorruptedLuck": 0.45,
+                "Luck": 3
+              }
+            }
+          ]
+        },
+        {
+          "Key": "Prophecy",
+          "Name": "Prophecy",
+          "Side": 1,
+          "Nodes": [
+            {
+              "Id": "V4_MYTHOS_PROPHECY_1",
+              "Name": "Whispered Omen",
+              "Desc": "Prophecy: +0.35 Fabled Luck and +1 Luck.",
+              "Bonus": {
+                "FabledLuck": 0.35,
+                "Luck": 1
+              }
+            },
+            {
+              "Id": "V4_MYTHOS_PROPHECY_2",
+              "Name": "Written Fate",
+              "Desc": "+0.50 Fabled Luck and +1 Luck.",
+              "Bonus": {
+                "FabledLuck": 0.5,
+                "Luck": 1
+              }
+            },
+            {
+              "Id": "V4_MYTHOS_PROPHECY_3",
+              "Name": "Final Chapter",
+              "Desc": "+3% Fabled Luck and +2 Luck.",
+              "Bonus": {
+                "Luck": 2
+              },
+              "PercentBonus": {
+                "FabledLuck": 0.03
+              }
+            },
+            {
+              "Id": "V4_MYTHOS_PROPHECY_4",
+              "Name": "Fate Foretold",
+              "Desc": "Prophecy capstone: +0.70 Fabled Luck and +3 Luck.",
+              "Bonus": {
+                "FabledLuck": 0.7,
+                "Luck": 3
+              }
+            }
+          ]
+        }
+      ],
+      "Mastery": {
+        "Id": "V4_MYTHOS_MASTERY",
+        "Name": "Keeper of Legends",
+        "Desc": "Mythos mastery: +0.70 Fabled Luck, +2% Fabled Luck, and +3 Luck.",
+        "Bonus": {
+          "FabledLuck": 0.7,
+          "Luck": 3
+        },
+        "PercentBonus": {
+          "FabledLuck": 0.02
+        }
+      }
+    },
+    {
+      "Key": "Corrupted",
+      "Name": "Corrupted",
+      "Lane": 2,
+      "MasteryCost": 3,
+      "Color": [
+        175,
+        70,
+        220
+      ],
+      "Dir": [
+        0.7,
+        -0.71
+      ],
+      "PathCosts": [
+        1,
+        2,
+        2,
+        3
+      ],
+      "Core": [
+        {
+          "Id": "V2_MYTHOS_CORE_2",
+          "Name": "Dark Verse",
+          "Desc": "+0.25 Corrupted Luck.",
+          "Bonus": {
+            "CorruptedLuck": 0.25
+          }
+        },
+        {
+          "Id": "V2_MYTHOS_CORRUPTION_1",
+          "Name": "Tainted Veil",
+          "Desc": "+0.40 Corrupted Luck.",
+          "Bonus": {
+            "CorruptedLuck": 0.4
+          }
+        },
+        {
+          "Id": "V2_MYTHOS_CORRUPTION_2",
+          "Name": "Withered Crown",
+          "Desc": "+0.60 Corrupted Luck. Decay and Ruin are now both available.",
+          "Bonus": {
+            "CorruptedLuck": 0.6
+          }
+        }
+      ],
+      "Paths": [
+        {
+          "Key": "Decay",
+          "Name": "Decay",
+          "Side": -1,
+          "Nodes": [
+            {
+              "Id": "V2_MYTHOS_CORRUPTION_3",
+              "Name": "Heart of Decay",
+              "Desc": "Decay: +0.90 Corrupted Luck.",
+              "Bonus": {
+                "CorruptedLuck": 0.9
+              }
+            },
+            {
+              "Id": "V2_MYTHOS_CORRUPTION_4",
+              "Name": "Perfect Blight",
+              "Desc": "+0.45 Corrupted Luck and +2 Luck.",
+              "Bonus": {
+                "CorruptedLuck": 0.45,
+                "Luck": 2
+              }
+            },
+            {
+              "Id": "V4_CORRUPTED_DECAY_3",
+              "Name": "Rot Eternal",
+              "Desc": "+0.60 Corrupted Luck.",
+              "Bonus": {
+                "CorruptedLuck": 0.6
+              }
+            },
+            {
+              "Id": "V4_CORRUPTED_DECAY_4",
+              "Name": "World in Ruin",
+              "Desc": "Decay capstone: +4% Corrupted Luck and +3 Luck.",
+              "Bonus": {
+                "Luck": 3
+              },
+              "PercentBonus": {
+                "CorruptedLuck": 0.04
+              }
+            }
+          ]
+        },
+        {
+          "Key": "Ruin",
+          "Name": "Ruin",
+          "Side": 1,
+          "Nodes": [
+            {
+              "Id": "V4_CORRUPTED_RUIN_1",
+              "Name": "Fractured Fate",
+              "Desc": "Ruin: +0.35 Corrupted Luck and +1 Luck.",
+              "Bonus": {
+                "CorruptedLuck": 0.35,
+                "Luck": 1
+              }
+            },
+            {
+              "Id": "V4_CORRUPTED_RUIN_2",
+              "Name": "Unholy Fortune",
+              "Desc": "+0.45 Corrupted Luck and +1 Luck.",
+              "Bonus": {
+                "CorruptedLuck": 0.45,
+                "Luck": 1
+              }
+            },
+            {
+              "Id": "V4_CORRUPTED_RUIN_3",
+              "Name": "Broken Reality",
+              "Desc": "+0.70 Corrupted Luck and +2 Luck.",
+              "Bonus": {
+                "CorruptedLuck": 0.7,
+                "Luck": 2
+              }
+            },
+            {
+              "Id": "V4_CORRUPTED_RUIN_4",
+              "Name": "End of All Things",
+              "Desc": "Ruin capstone: +0.55 Corrupted Luck, +0.15 Void Luck, and +3 Luck.",
+              "Bonus": {
+                "CorruptedLuck": 0.55,
+                "VoidLuck": 0.15,
+                "Luck": 3
+              }
+            }
+          ]
+        }
+      ],
+      "Mastery": {
+        "Id": "V4_CORRUPTED_MASTERY",
+        "Name": "Avatar of Corruption",
+        "Desc": "Corrupted mastery: +0.80 Corrupted Luck, +0.30 Void Luck, and +3 Luck.",
+        "Bonus": {
+          "CorruptedLuck": 0.8,
+          "VoidLuck": 0.3,
+          "Luck": 3
+        }
+      }
+    },
+    {
+      "Key": "Alchemy",
+      "Name": "Alchemy",
+      "Lane": 3,
+      "Color": [
+        255,
+        120,
+        125
+      ],
+      "Dir": [
+        0.98,
+        -0.2
+      ],
+      "Core": [
+        {
+          "Name": "Longer Brew",
+          "Desc": "Potions last 10% longer.",
+          "Bonus": {
+            "PotionDurationMult": 0.1
+          }
+        },
+        {
+          "Name": "Refined Mixture",
+          "Desc": "Potion stat boosts are 5% stronger.",
+          "Bonus": {
+            "PotionPowerMult": 0.05
+          }
+        },
+        {
+          "Name": "Quick Sip",
+          "Desc": "+0.02 Roll Speed. Preservation and Potency are now both available.",
+          "Bonus": {
+            "RollSpeed": 0.02
+          }
+        }
+      ],
+      "Paths": [
+        {
+          "Key": "Preservation",
+          "Name": "Preservation",
+          "Side": -1,
+          "Nodes": [
+            {
+              "Name": "Sealed Flask",
+              "Desc": "Preservation: potions last 18% longer.",
+              "Bonus": {
+                "PotionDurationMult": 0.18
+              }
+            },
+            {
+              "Name": "Timeless Brew",
+              "Desc": "Potions last 25% longer.",
+              "Bonus": {
+                "PotionDurationMult": 0.25
+              }
+            },
+            {
+              "Name": "Eternal Elixir",
+              "Desc": "Potions last 45% longer.",
+              "Bonus": {
+                "PotionDurationMult": 0.45
+              }
+            },
+            {
+              "Name": "Brew Without End",
+              "Desc": "Preservation capstone: potions last 20% longer.",
+              "Bonus": {
+                "PotionDurationMult": 0.2
+              }
+            }
+          ]
+        },
+        {
+          "Key": "Potency",
+          "Name": "Potency",
+          "Side": 1,
+          "Nodes": [
+            {
+              "Name": "Concentrated Dose",
+              "Desc": "Potency: potion stat boosts are 10% stronger.",
+              "Bonus": {
+                "PotionPowerMult": 0.1
+              }
+            },
+            {
+              "Name": "Catalyst",
+              "Desc": "Potion stat boosts are 12% stronger.",
+              "Bonus": {
+                "PotionPowerMult": 0.12
+              }
+            },
+            {
+              "Name": "Grand Alchemist",
+              "Desc": "Potion stat boosts are 22% stronger and +0.03 Roll Speed.",
+              "Bonus": {
+                "PotionPowerMult": 0.22,
+                "RollSpeed": 0.03
+              }
+            },
+            {
+              "Name": "Philosopher's Draught",
+              "Desc": "Potency capstone: potion stat boosts are 14% stronger.",
+              "Bonus": {
+                "PotionPowerMult": 0.14
+              }
+            }
+          ]
+        }
+      ],
+      "Mastery": {
+        "Name": "Magnum Opus",
+        "Desc": "Alchemy mastery: +15% potion duration, +15% potion power, and +0.02 Roll Speed.",
+        "Bonus": {
+          "PotionDurationMult": 0.15,
+          "PotionPowerMult": 0.15,
+          "RollSpeed": 0.02
+        }
+      }
+    }
+  ],
+  "transcendence": [
+    {
+      "Id": "V5_TRANSCEND_ENTRY",
+      "Name": "Echo of Eternity",
+      "Cost": 3,
+      "Desc": "Transcendence: +6 Luck and +3% Luck.",
+      "Depth": 3,
+      "Side": 0,
+      "Bonus": {
+        "Luck": 6
+      },
+      "PercentBonus": {
+        "Luck": 0.03
+      },
+      "Requires": [
+        "V4_GRANDMASTERY"
+      ]
+    },
+    {
+      "Id": "V5_TRANSCEND_STAR_1",
+      "Name": "Starforged Fortune",
+      "Cost": 3,
+      "Desc": "Starlit: +4% Luck and +4% Shiny Luck.",
+      "Depth": 4,
+      "Side": -90,
+      "PercentBonus": {
+        "Luck": 0.04,
+        "ShinyLuck": 0.04
+      },
+      "Requires": [
+        "V5_TRANSCEND_ENTRY"
+      ]
+    },
+    {
+      "Id": "V5_TRANSCEND_STAR_2",
+      "Name": "Celestial Rite",
+      "Cost": 4,
+      "Desc": "Starlit: +5% Awakened Luck and +5% Fabled Luck.",
+      "Depth": 5,
+      "Side": -110,
+      "PercentBonus": {
+        "AwakenedLuck": 0.05,
+        "FabledLuck": 0.05
+      },
+      "Requires": [
+        "V5_TRANSCEND_STAR_1"
+      ]
+    },
+    {
+      "Id": "V5_TRANSCEND_ABYSS_1",
+      "Name": "Abyssal Whisper",
+      "Cost": 3,
+      "Desc": "Abyssal: +4% Corrupted Luck and +4% Void Luck.",
+      "Depth": 4,
+      "Side": 90,
+      "PercentBonus": {
+        "CorruptedLuck": 0.04,
+        "VoidLuck": 0.04
+      },
+      "Requires": [
+        "V5_TRANSCEND_ENTRY"
+      ]
+    },
+    {
+      "Id": "V5_TRANSCEND_ABYSS_2",
+      "Name": "Hollow Crown",
+      "Cost": 4,
+      "Desc": "Abyssal: +0.30 Void Luck and +5% Void Luck.",
+      "Depth": 5,
+      "Side": 110,
+      "Bonus": {
+        "VoidLuck": 0.3
+      },
+      "PercentBonus": {
+        "VoidLuck": 0.05
+      },
+      "Requires": [
+        "V5_TRANSCEND_ABYSS_1"
+      ]
+    },
+    {
+      "Id": "V5_TRANSCEND_APOTHEOSIS",
+      "Name": "Apotheosis",
+      "Cost": 5,
+      "Desc": "Requires both paths: +6% to all six Lucks, +0.03 Roll Speed, and +2% Double Roll, Roll Twice, and Triple Roll chance.",
+      "Depth": 6,
+      "Side": 0,
+      "Bonus": {
+        "RollSpeed": 0.03,
+        "DoubleRollChance": 0.02,
+        "RollTwiceChance": 0.02,
+        "TripleRollChance": 0.02
+      },
+      "PercentBonus": {
+        "Luck": 0.06,
+        "ShinyLuck": 0.06,
+        "AwakenedLuck": 0.06,
+        "FabledLuck": 0.06,
+        "CorruptedLuck": 0.06,
+        "VoidLuck": 0.06
+      },
+      "Requires": [
+        "V5_TRANSCEND_STAR_2",
+        "V5_TRANSCEND_ABYSS_2"
+      ]
+    },
+    {
+      "Id": "V5_TRANSCEND_FINAL",
+      "Name": "Beyond the Final Path",
+      "Cost": 6,
+      "Desc": "True final node: +8% to all six Lucks, +15% potion power, and +15% potion duration.",
+      "Depth": 7,
+      "Side": 0,
+      "Bonus": {
+        "PotionPowerMult": 0.15,
+        "PotionDurationMult": 0.15
+      },
+      "PercentBonus": {
+        "Luck": 0.08,
+        "ShinyLuck": 0.08,
+        "AwakenedLuck": 0.08,
+        "FabledLuck": 0.08,
+        "CorruptedLuck": 0.08,
+        "VoidLuck": 0.08
+      },
+      "Requires": [
+        "V5_TRANSCEND_APOTHEOSIS"
+      ]
+    }
+  ],
+  "grandmastery": [
+    {
+      "id": "V3_GRANDMASTERY",
+      "name": "Master of All Paths",
+      "percentBonus": {
+        "Luck": 0.05,
+        "ShinyLuck": 0.05,
+        "AwakenedLuck": 0.05,
+        "FabledLuck": 0.05,
+        "CorruptedLuck": 0.05,
+        "VoidLuck": 0.05
+      }
+    },
+    {
+      "id": "V4_GRANDMASTERY",
+      "name": "Master of Every Path",
+      "percentBonus": {
+        "Luck": 0.05,
+        "ShinyLuck": 0.05,
+        "AwakenedLuck": 0.05,
+        "FabledLuck": 0.05,
+        "CorruptedLuck": 0.05,
+        "VoidLuck": 0.05
+      },
+      "bonus": {
+        "Luck": 5,
+        "DoubleRollChance": 0.02
+      }
+    }
+  ],
+  "battleTower": {
+    "MAX_FLOOR": 128,
+    "STAT_CURVE_MAX_FLOOR": 113,
+    "DifficultyMult": {
+      "Easy": 1.63,
+      "Medium": 3.63,
+      "Hard": 6.18,
+      "Nightmare": 24,
+      "Abyss": 280,
+      "Oblivion": 2950
+    },
+    "DifficultyFloorScale": {
+      "Easy": 0,
+      "Medium": 0,
+      "Hard": 0,
+      "Nightmare": 0.016,
+      "Abyss": 0.04,
+      "Oblivion": 0.06
+    },
+    "DifficultyVariant": {
+      "Easy": {
+        "shiny": true,
+        "awakened": false,
+        "fabled": false,
+        "corrupted": false
+      },
+      "Medium": {
+        "shiny": false,
+        "awakened": true,
+        "fabled": false,
+        "corrupted": false
+      },
+      "Hard": {
+        "shiny": false,
+        "awakened": false,
+        "fabled": true,
+        "corrupted": false
+      },
+      "Nightmare": {
+        "shiny": false,
+        "awakened": false,
+        "fabled": true,
+        "corrupted": true
+      },
+      "Abyss": {
+        "shiny": false,
+        "awakened": false,
+        "fabled": false,
+        "corrupted": false,
+        "void": true
+      },
+      "Oblivion": {
+        "shiny": false,
+        "awakened": false,
+        "fabled": true,
+        "corrupted": false,
+        "void": true
+      }
+    },
+    "DifficultyOrder": [
+      "Easy",
+      "Medium",
+      "Hard",
+      "Nightmare",
+      "Abyss",
+      "Oblivion"
+    ],
+    "DifficultyUnlock": {
+      "Abyss": {
+        "difficulty": "Nightmare",
+        "floor": 100
+      }
+    }
+  },
+  "towerShop": [
+    {
+      "id": "Luck",
+      "name": "Luck",
+      "desc": "+2 Luck per level",
+      "maxLevel": 20,
+      "cost": 4
+    },
+    {
+      "id": "ShinyLuck",
+      "name": "Shiny Luck",
+      "desc": "+0.1 Shiny Luck per level",
+      "maxLevel": 20,
+      "cost": 4
+    },
+    {
+      "id": "AwakenedLuck",
+      "name": "Awakened Luck",
+      "desc": "+0.3 Awakened Luck per level",
+      "maxLevel": 20,
+      "cost": 5
+    },
+    {
+      "id": "FabledLuck",
+      "name": "Fabled Luck",
+      "desc": "+0.2 Fabled Luck per level",
+      "maxLevel": 20,
+      "cost": 6
+    },
+    {
+      "id": "CorruptedLuck",
+      "name": "Corrupted Luck",
+      "desc": "+0.2 Corrupted Luck per level",
+      "maxLevel": 20,
+      "cost": 8
+    },
+    {
+      "id": "VoidLuck",
+      "name": "Void Luck",
+      "desc": "+0.5 Void Luck per level",
+      "maxLevel": 20,
+      "cost": 8
+    },
+    {
+      "id": "DoubleRollChance",
+      "name": "Double Roll Chance",
+      "desc": "+2% chance per roll to receive 2 cards(Increases roll count by 1)",
+      "maxLevel": 10,
+      "cost": 5
+    },
+    {
+      "id": "RollTwiceChance",
+      "name": "Roll Twice Chance",
+      "desc": "+1% chance to roll an additional time!(Increases roll count by 2)",
+      "maxLevel": 10,
+      "cost": 5
+    },
+    {
+      "id": "LuckyHandChance",
+      "name": "Lucky Hand Chance",
+      "desc": "+2% chance for Lucky Hand effect (no relic needed)",
+      "maxLevel": 10,
+      "cost": 6
+    },
+    {
+      "id": "ThirdRelicSlot",
+      "name": "Third Relic Slot",
+      "desc": "Unlocks a permanent third relic equip slot",
+      "maxLevel": 1,
+      "cost": 25,
+      "noExtraLevels": true
+    }
+  ],
+  "voidShop": [
+    {
+      "id": "InfiniteBanSlots",
+      "name": "Infinite Ban Slot",
+      "desc": "+1 Infinite Dungeon enemy ban slot",
+      "per": 1,
+      "suffix": "",
+      "statName": "ban slot(s)",
+      "maxLevel": 3,
+      "cost": 30
+    },
+    {
+      "id": "PASlots",
+      "name": "Personal Artifact Slot",
+      "desc": "+1 Personal Artifact stat slot and +1 lock",
+      "per": 1,
+      "suffix": "",
+      "statName": "artifact slot(s) + lock(s)",
+      "maxLevel": 2,
+      "cost": 60
+    },
+    {
+      "id": "VoidPotionPower",
+      "name": "Potion Potency",
+      "desc": "Potion stat boosts are stronger",
+      "per": 4,
+      "suffix": "%",
+      "statName": "potion power",
+      "maxLevel": 10,
+      "cost": 8
+    },
+    {
+      "id": "VoidArtifactPower",
+      "name": "Artifact Resonance",
+      "desc": "Equipped artifact stats are stronger",
+      "per": 5,
+      "suffix": "%",
+      "statName": "artifact stats",
+      "maxLevel": 10,
+      "cost": 8
+    },
+    {
+      "id": "VoidLuckPct",
+      "name": "Void Attunement",
+      "desc": "Multiplies your total Void Luck",
+      "per": 3,
+      "suffix": "%",
+      "statName": "Void Luck",
+      "maxLevel": 10,
+      "cost": 11
+    }
+  ],
+  "personalArtifact": {
+    "maxLevel": 100,
+    "rollsForMaxLevel": 100000000,
+    "levelExponent": 0.4,
+    "slotUnlockLevels": [
+      1,
+      15,
+      35,
+      60,
+      90
+    ],
+    "gamepassBonusSlots": 2,
+    "maxRarityBonusSlots": 2,
+    "maxTowerBonusSlots": 2,
+    "maxSlots": 11,
+    "autoRollUnlockCost": 100000,
+    "autoRollMaxTargets": 4,
+    "autoRollInterval": 0.5,
+    "autoRollTolerance": 0.005,
+    "maxCopiesPerStat": 2,
+    "duplicateSecondCopyMultiplier": 0.5,
+    "rarities": [
+      {
+        "id": "Common",
+        "name": "Common",
+        "weight": 5500,
+        "statMultiplier": 1.02,
+        "bonusSlots": 0,
+        "bonusLocks": 0,
+        "color": [
+          175,
+          175,
+          180
+        ]
+      },
+      {
+        "id": "Uncommon",
+        "name": "Uncommon",
+        "weight": 2500,
+        "statMultiplier": 1.05,
+        "bonusSlots": 0,
+        "bonusLocks": 0,
+        "color": [
+          105,
+          195,
+          120
+        ]
+      },
+      {
+        "id": "Rare",
+        "name": "Rare",
+        "weight": 1200,
+        "statMultiplier": 1.08,
+        "bonusSlots": 0,
+        "bonusLocks": 0,
+        "color": [
+          95,
+          155,
+          235
+        ]
+      },
+      {
+        "id": "Epic",
+        "name": "Epic",
+        "weight": 500,
+        "statMultiplier": 1.1,
+        "bonusSlots": 0,
+        "bonusLocks": 0,
+        "color": [
+          185,
+          105,
+          235
+        ]
+      },
+      {
+        "id": "Legendary",
+        "name": "Legendary",
+        "weight": 250,
+        "statMultiplier": 1.14,
+        "bonusSlots": 0,
+        "bonusLocks": 0,
+        "color": [
+          245,
+          185,
+          70
+        ]
+      },
+      {
+        "id": "Mythic",
+        "name": "Mythic",
+        "weight": 50,
+        "statMultiplier": 1.2,
+        "bonusSlots": 1,
+        "bonusLocks": 1,
+        "color": [
+          255,
+          90,
+          180
+        ]
+      },
+      {
+        "id": "Celestial",
+        "name": "Celestial",
+        "weight": 5,
+        "statMultiplier": 1.3,
+        "bonusSlots": 2,
+        "bonusLocks": 2,
+        "color": [
+          90,
+          235,
+          255
+        ]
+      }
+    ],
+    "stats": [
+      {
+        "id": "Luck",
+        "kind": "flat",
+        "weight": 100,
+        "min": 5,
+        "max": 500,
+        "decimals": 0
+      },
+      {
+        "id": "ShinyLuck",
+        "kind": "flat",
+        "weight": 80,
+        "min": 0.2,
+        "max": 10,
+        "decimals": 2
+      },
+      {
+        "id": "AwakenedLuck",
+        "kind": "flat",
+        "weight": 80,
+        "min": 1,
+        "max": 80,
+        "decimals": 1
+      },
+      {
+        "id": "FabledLuck",
+        "kind": "flat",
+        "weight": 60,
+        "min": 0.5,
+        "max": 25,
+        "decimals": 1
+      },
+      {
+        "id": "CorruptedLuck",
+        "kind": "flat",
+        "weight": 60,
+        "min": 0.5,
+        "max": 30,
+        "decimals": 1
+      },
+      {
+        "id": "VoidLuck",
+        "kind": "flat",
+        "weight": 30,
+        "min": 0.25,
+        "max": 50,
+        "decimals": 2
+      },
+      {
+        "id": "PotionDurationMult",
+        "kind": "potion",
+        "weight": 40,
+        "min": 0.05,
+        "max": 1,
+        "decimals": 3
+      },
+      {
+        "id": "LuckMult",
+        "kind": "mult",
+        "weight": 25,
+        "min": 1.1,
+        "max": 2,
+        "decimals": 3
+      },
+      {
+        "id": "ShinyLuckMult",
+        "kind": "mult",
+        "weight": 20,
+        "min": 1.05,
+        "max": 1.75,
+        "decimals": 3
+      },
+      {
+        "id": "AwakenedLuckMult",
+        "kind": "mult",
+        "weight": 20,
+        "min": 1.05,
+        "max": 1.75,
+        "decimals": 3
+      },
+      {
+        "id": "FabledLuckMult",
+        "kind": "mult",
+        "weight": 15,
+        "min": 1.05,
+        "max": 1.5,
+        "decimals": 3
+      },
+      {
+        "id": "CorruptedLuckMult",
+        "kind": "mult",
+        "weight": 15,
+        "min": 1.05,
+        "max": 1.5,
+        "decimals": 3
+      },
+      {
+        "id": "VoidLuckMult",
+        "kind": "mult",
+        "weight": 8,
+        "min": 1.03,
+        "max": 1.5,
+        "decimals": 3
+      },
+      {
+        "id": "DoubleRollChance",
+        "kind": "chance",
+        "weight": 8,
+        "min": 0.05,
+        "max": 0.3,
+        "decimals": 3
+      },
+      {
+        "id": "RollTwiceChance",
+        "kind": "chance",
+        "weight": 5,
+        "min": 0.05,
+        "max": 0.27,
+        "decimals": 3
+      },
+      {
+        "id": "LuckyHandChance",
+        "kind": "chance",
+        "weight": 4,
+        "min": 0.05,
+        "max": 0.25,
+        "decimals": 3
+      },
+      {
+        "id": "RollSpeed",
+        "kind": "flat",
+        "weight": 3,
+        "min": 0.02,
+        "max": 0.15,
+        "decimals": 3
+      },
+      {
+        "id": "TripleRollChance",
+        "kind": "chance",
+        "weight": 2,
+        "min": 0.008,
+        "max": 0.12,
+        "decimals": 3
+      }
+    ],
+    "extraLocksConfirmed": false
+  },
+  "collectionSets": [
+    {
+      "id": "StarterWorld",
+      "name": "Base Set",
+      "kind": "World",
+      "match": {
+        "badge": false
+      },
+      "bonus": {
+        "Luck": 2,
+        "ShinyLuck": 0.1
+      }
+    },
+    {
+      "id": "GoblinWorld",
+      "name": "Goblin World",
+      "kind": "World",
+      "match": {
+        "badge": "GoblinBadge"
+      },
+      "bonus": {
+        "Luck": 1,
+        "ShinyLuck": 0.05
+      }
+    },
+    {
+      "id": "SpiderWorld",
+      "name": "Spider World",
+      "kind": "World",
+      "match": {
+        "badge": "SpiderBadge"
+      },
+      "bonus": {
+        "Luck": 1,
+        "AwakenedLuck": 0.1
+      }
+    },
+    {
+      "id": "CrystalWorld",
+      "name": "Crystal World",
+      "kind": "World",
+      "match": {
+        "badge": "CrystalBadge"
+      },
+      "bonus": {
+        "Luck": 1.5,
+        "ShinyLuck": 0.1
+      }
+    },
+    {
+      "id": "TownWorld",
+      "name": "Town World",
+      "kind": "World",
+      "match": {
+        "badge": "TownBadge"
+      },
+      "bonus": {
+        "Luck": 2,
+        "AwakenedLuck": 0.15,
+        "VoidLuck": 0.2
+      }
+    },
+    {
+      "id": "EndWorld",
+      "name": "End World",
+      "kind": "World",
+      "match": {
+        "badge": "EndBadge"
+      },
+      "bonus": {
+        "Luck": 3,
+        "AwakenedLuck": 0.3,
+        "FabledLuck": 0.2
+      }
+    },
+    {
+      "id": "SnowWorld",
+      "name": "Snow World",
+      "kind": "World",
+      "match": {
+        "badge": "SnowBadge"
+      },
+      "bonus": {
+        "Luck": 5,
+        "FabledLuck": 0.5
+      }
+    },
+    {
+      "id": "CorruptedWorld",
+      "name": "Corrupted World",
+      "kind": "World",
+      "match": {
+        "badge": "CorruptedWorldBadge"
+      },
+      "bonus": {
+        "Luck": 10,
+        "CorruptedLuck": 0.7,
+        "VoidLuck": 0.4
+      }
+    },
+    {
+      "id": "VoidWorld",
+      "name": "Void World",
+      "kind": "World",
+      "match": {
+        "badge": "VoidWorldBadge"
+      },
+      "bonus": {
+        "Luck": 21,
+        "FabledLuck": 1,
+        "CorruptedLuck": 0.5,
+        "VoidLuck": 2.5
+      }
+    },
+    {
+      "id": "TravelingCaravan",
+      "name": "Traveling Caravan",
+      "kind": "Weather",
+      "match": {
+        "weather": "TravelingCaravan"
+      },
+      "bonus": {
+        "Luck": 1,
+        "ShinyLuck": 0.05
+      }
+    },
+    {
+      "id": "GnomeRaid",
+      "name": "Gnome Raid",
+      "kind": "Weather",
+      "match": {
+        "weather": "GnomeRaid"
+      },
+      "bonus": {
+        "Luck": 1,
+        "AwakenedLuck": 0.1
+      }
+    },
+    {
+      "id": "WarriorsPath",
+      "name": "Warrior's Path",
+      "kind": "Weather",
+      "match": {
+        "weather": "WarriorsPath"
+      },
+      "bonus": {
+        "Luck": 2,
+        "AwakenedLuck": 0.1
+      }
+    },
+    {
+      "id": "IronLegion",
+      "name": "Iron Legion",
+      "kind": "Weather",
+      "match": {
+        "weather": "IronLegion"
+      },
+      "bonus": {
+        "Luck": 1,
+        "ShinyLuck": 0.1
+      }
+    },
+    {
+      "id": "NewYearsFestival",
+      "name": "New Year's Festival",
+      "kind": "Weather",
+      "match": {
+        "weather": "NewYearsFestival"
+      },
+      "bonus": {
+        "Luck": 1.5,
+        "FabledLuck": 0.1
+      }
+    },
+    {
+      "id": "DragonsRoost",
+      "name": "Dragon's Roost",
+      "kind": "Weather",
+      "match": {
+        "weather": "DragonsRoost"
+      },
+      "bonus": {
+        "Luck": 2,
+        "FabledLuck": 0.25
+      }
+    },
+    {
+      "id": "GlaringSun",
+      "name": "Glaring Sun",
+      "kind": "Weather",
+      "match": {
+        "weather": "GlaringSun"
+      },
+      "bonus": {
+        "Luck": 1,
+        "ShinyLuck": 0.1
+      }
+    },
+    {
+      "id": "RipInTime",
+      "name": "Rip in Time",
+      "kind": "Weather",
+      "match": {
+        "weather": "RipInTime"
+      },
+      "bonus": {
+        "Luck": 6,
+        "AwakenedLuck": 0.6
+      }
+    },
+    {
+      "id": "BlackHole",
+      "name": "Black Hole",
+      "kind": "Weather",
+      "match": {
+        "weather": "BlackHole"
+      },
+      "bonus": {
+        "Luck": 3.5,
+        "CorruptedLuck": 0.25,
+        "VoidLuck": 0.2
+      }
+    },
+    {
+      "id": "ShadowedWorld",
+      "name": "Shadowed World",
+      "kind": "Weather",
+      "match": {
+        "weather": "ShadowedWorld"
+      },
+      "bonus": {
+        "Luck": 2.5,
+        "CorruptedLuck": 0.15
+      }
+    }
+  ],
+  "releaseNotesOnly": {
+    "minimumRollSeconds": 0.2,
+    "under10MillionRollsLuckMultiplier": 1.25,
+    "code": "!MORETOWER"
+  },
+  "voidLuckPerStatPoint": {
+    "value": 0.15,
+    "source": "StatsUI"
+  },
+  "unconfirmed": [
+    "Void Fracture numerical effects, damage basis, stack cap, and server trigger ordering",
+    "Server combination order for Tower, artifacts, Index Sets, and skill tree bonuses",
+    "Void Shop extra artifact locks: shop text says +1 lock, but the exported GetMaxLockedStats function has no tower-slot parameter",
+    "Server roll distribution, roll speed limits, and allocation enforcement"
+  ]
+}

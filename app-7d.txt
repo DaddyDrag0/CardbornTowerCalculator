@@ -21,7 +21,7 @@ damage=function(a,t,d,r,ctx,ignore=false,meta={}){
   if(!t||t.dead||t.hp<=0||d<=0)return 0;FULL_CONTEXT=ctx;FULL_init(a);FULL_init(t);
   if(!ignore&&!meta?.mammothSplit&&meta?.direct!==false&&a&&a.side!==t.side){const tm=FULL_team(t,ctx),m=tm.find(x=>x&&!x.dead&&x.hp>0&&x.index===t.index+1&&FULL_enabled(x,ctx)&&x.ability?.name==='Age of Beasts');if(m){const total=FULL_fab(m)?Math.floor(d*.80):Math.floor(d),front=Math.ceil(total/2),back=Math.floor(total/2);const d1=damage(a,t,front,r,ctx,false,{...meta,mammothSplit:true});const d2=back>0?damage(a,m,back,r,ctx,false,{...meta,mammothSplit:true,direct:false}):0;if(ctx)ctx._lastDamageTarget=t;return d1+d2}}
   const redirected=FULL_redirect(a,t,Math.floor(d),r,ctx,ignore,meta);t=redirected.target||t;let amount=redirected.damage;if(redirected.blocked||amount<=0)return 0;
-  const before=t.hp,real=incoming(t,a,amount,r,ctx,ignore,meta);t.hp-=real;t.hits=(t.hits||0)+1;if(ctx){ctx._lastDamageTarget=t;ctx._lastDamageRaw=amount;ctx._lastDamageReal=real}FULL_postDamageHooks(a,t,real,r,ctx);
+  const before=t.hp,real=incoming(t,a,amount,r,ctx,ignore,meta);t.hp-=real;t.hits=(t.hits||0)+1;FULL_postDamageHooks(a,t,real,r,ctx);if(ctx){ctx._lastDamageTarget=t;ctx._lastDamageRaw=amount;ctx._lastDamageReal=real;ctx._lastDamageBefore=before}
   return Math.max(0,before-Math.max(0,t.hp));
 };
 

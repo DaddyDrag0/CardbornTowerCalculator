@@ -68,7 +68,7 @@ turnStart=function(f,t,own,foes,r,ctx){
   else if(n==='Treacherous Feast'){const e=pick(r,FULL_alive(foes));if(e){const res=FULL_effectDamage(f,e,Math.floor(f.atk*(FULL_fab(f)?1:.20)),r,ctx);if(res.killed)f.hp=f.max}}
   else if(n==='King’s Command'&&f.turn%2===0&&target){FULL_effectDamage(target,target,Math.floor(target.atk*.65),r,ctx,true,{selfHit:true});if(FULL_fab(f))for(const d of FULL_alive(own).filter(x=>x!==f&&FULL_isDragon(x)))FULL_addBlock(d,1);attacks=0}
   else if(n==='Titan’s Kindness'){if(f._titanHadDeath){if(!f._titanPowerUsed){mult*=FULL_fab(f)?4.5:3;f._titanPowerUsed=true}}else{for(const x of FULL_alive(own))buff(x,FULL_fab(f)?.15:.10);attacks=0}}
-  else if(n==='Kings Vision')buff(f,.15);
+  else if(n==='Kings Vision'){buff(f,FULL_fab(f)?.25:.15);if(FULL_fab(f)&&f.turn%3===0)for(const enemy of FULL_alive(foes))enemy.atk=Math.max(1,Math.floor(enemy.atk*.90))}
   else if(n==='Assassin’s Blizzard'){target=FULL_lowest(foes)||target;if(target?.frozen)mult*=FULL_fab(f)?2:1.40}
   else if(n==='Necrotic Bloom'&&f.turn%2===0){FULL_addBlock(f,1);for(const x of FULL_alive(own))heal(x,Math.floor(x.max*(FULL_fab(f)?.12:.08)))}
 
