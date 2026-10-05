@@ -209,12 +209,12 @@ die=function(f,k,team,foes,r,ctx){
   if(starfall){savedKillerAbility=k.ability;k.ability={name:'',desc:''}}
   let result;
   try{result=VOID_baseDie(f,k,team,foes,r,ctx)}finally{if(savedKillerAbility)k.ability=savedKillerAbility}
-  if(result&&starfall&&k._voidStarfallEntry){
+  if(result&&starfall&&k.side!==f.side&&k._voidStarfallEntry){
     k.atk+=Math.floor(k._starfallBaseAtk*.40);
     const hp=Math.floor(k._starfallBaseMax*.20);k.max+=hp;k.hp+=hp;
   }
   if(first&&enabled&&name==='Shadow Rebirth'&&FULL_fab(f)&&!result)for(const enemy of [...FULL_alive(foes)])if(enemy!==k)FULL_effectDamage(f,enemy,Math.floor(f.max*.30),r,ctx,true,{rebirth:true});
-  if(result&&k&&FULL_enabled(k,ctx)&&k.ability?.name==='Cataclysmic Devour'&&FULL_fab(k)){
+  if(result&&k&&k.side!==f.side&&FULL_enabled(k,ctx)&&k.ability?.name==='Cataclysmic Devour'&&FULL_fab(k)){
     const hp=Math.floor(f.max*.45)-Math.floor(f.max*.30),atk=Math.floor(f.atk*.45)-Math.floor(f.atk*.30);
     k.max+=hp;k.hp+=hp;k.atk+=atk;
   }
@@ -232,7 +232,7 @@ die=function(f,k,team,foes,r,ctx){
 };
 
 // Keep estimates distinct from confirmed game mechanics in public engine status.
-window.CARDBORN_ENGINE_STATUS={...window.CARDBORN_ENGINE_STATUS,version:53,voidFractureConfirmed:VOID_rulesReady()&&!VOID_FRACTURE_RULES.estimated,voidFractureEstimated:!!VOID_FRACTURE_RULES.estimated,maxEnemyBans:6};
+window.CARDBORN_ENGINE_STATUS={...window.CARDBORN_ENGINE_STATUS,version:54,voidFractureConfirmed:VOID_rulesReady()&&!VOID_FRACTURE_RULES.estimated,voidFractureEstimated:!!VOID_FRACTURE_RULES.estimated,maxEnemyBans:6};
 
 const VOID_baseBattle=battle;
 battle=function(pt,et,r,cid,debug=false){

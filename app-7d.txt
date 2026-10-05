@@ -47,24 +47,24 @@ function FULL_afterAttackGrowth(f,t,dealt,own,foes,r,ctx,killed,meta={}){
 
 after=function(f,t,dealt,own,foes,r,ctx,killed,meta={}){corrPost(f,t,dealt,killed);FULL_afterAttackGrowth(f,t,dealt,own,foes,r,ctx,killed,meta)};
 
-function FULL_passCrown(f,team){if(!f._crownPct)return;const next=FULL_next(f,team);if(!next)return;const loss=FULL_fab(f)?.15:.10,nextPct=Math.max(0,f._crownPct-loss);if(nextPct){next._crownPct=nextPct;buff(next,nextPct)}}
-function FULL_triggerRevenants(deadAlly,team,r){for(const rev of team.filter(x=>x!==deadAlly&&x.dead&&x.ability?.name==='Undying Grudge')){if(rev._grudgeDone)continue;const chance=FULL_fab(rev)?Math.min(.80,rev._reviveChance||.50):.35;if(r()<chance){rev.dead=false;rev.hp=Math.max(1,Math.floor(rev.max*(FULL_fab(rev)?.75:.50)));rev._entered=false;if(FULL_fab(rev))rev.atk=Math.floor(rev.atk*1.25);rev._reviveChance=.50}else if(FULL_fab(rev))rev._reviveChance=Math.min(.80,(rev._reviveChance||.50)+.15)}}
+function FULL_passCrown(f,team){if(!f._crownPct)return;const next=FULL_next(f,team);if(!next)return;const loss=FULL_fab(f)?.15:.10,nextPct=Math.max(0,Math.round((f._crownPct-loss)*100)/100);if(nextPct){next._crownPct=nextPct;buff(next,nextPct)}}
+function FULL_triggerRevenants(deadAlly,team,r){for(const rev of team.filter(x=>x!==deadAlly&&x.dead&&x.ability?.name==='Undying Grudge')){if(rev._grudgeDone)continue;const chance=FULL_fab(rev)?Math.min(.80,rev._reviveChance||.50):.35;if(r()<chance){rev.dead=false;rev.hp=Math.max(1,Math.floor(rev.max*(FULL_fab(rev)?.75:.50)));FULL_queueRevive(rev,team);if(FULL_fab(rev))rev.atk=Math.floor(rev.atk*1.25);rev._reviveChance=.50}else if(FULL_fab(rev))rev._reviveChance=Math.min(.80,(rev._reviveChance||.50)+.15)}}
 function FULL_processCurseDeath(f){if(!f?._decayCurse)return;const source=f._decayCurse.source;if(source&&!source.dead&&source.hp>0){heal(source,Math.floor(source.max*(FULL_fab(source)?.35:.20)));FULL_addBlock(source,1);if(FULL_fab(source))source.atk=Math.floor(source.atk*1.20)}f._decayCurse=null}
 
 function die(f,k,team,foes,r,ctx){
   if(!f||f.dead||f.hp>0)return false;FULL_CONTEXT=ctx;FULL_init(f);FULL_init(k);const deathEffectsEnabled=FULL_deathEnabled(f,ctx);
   if(deathEffectsEnabled){const n=f.ability.name;
-    if(n==='Soul Reservoir'&&f.revives<2){f.revives++;if(r()<.60){f.hp=Math.max(1,Math.floor(f.max*.50));FULL_stun(k,1);return false}if(FULL_fab(f)){f.hp=Math.max(1,Math.floor(f.max*.20));return false}}
-    if(n==='Shadow Rebirth'&&!f._shadowRebirth){f._shadowRebirth=true;f.hp=f.max;if(k)FULL_effectDamage(f,k,f.max,r,ctx,true,{explosion:true});return false}
-    if(n==='Full Moon Transformation'&&!f._moonRevive){f._moonRevive=true;const q=FULL_fab(f)?.20:.15;buff(f,q);f.hp=f.max;if(FULL_fab(f))f._extraTurnAfterRevive=true;return false}
-    if(n==='Age of Beasts'&&!f._mammothRevive){f._mammothRevive=true;f.hp=Math.max(1,Math.floor(f.max*(FULL_fab(f)?.50:.40)));return false}
+    if(n==='Soul Reservoir'&&f.revives<2){f.revives++;if(r()<.60){f.hp=Math.max(1,Math.floor(f.max*.50));FULL_stun(k,1);FULL_queueRevive(f,team);return false}if(FULL_fab(f)){f.hp=Math.max(1,Math.floor(f.max*.20));FULL_queueRevive(f,team);return false}}
+    if(n==='Shadow Rebirth'&&!f._shadowRebirth){f._shadowRebirth=true;f.hp=f.max;if(k)FULL_effectDamage(f,k,f.max,r,ctx,true,{explosion:true});FULL_queueRevive(f,team);return false}
+    if(n==='Full Moon Transformation'&&!f._moonRevive){f._moonRevive=true;const q=FULL_fab(f)?.20:.15;buff(f,q);f.hp=f.max;if(FULL_fab(f))f._extraTurnAfterRevive=true;FULL_queueRevive(f,team);return false}
+    if(n==='Age of Beasts'&&!f._mammothRevive){f._mammothRevive=true;f.hp=Math.max(1,Math.floor(f.max*(FULL_fab(f)?.50:.40)));FULL_queueRevive(f,team);return false}
     if(n==='Curse of Decay'&&!f._decayUsed){f._decayUsed=true;f.hp=1;FULL_addBlock(f,1);if(k)k._decayCurse={source:f};return false}
   }
-  f.dead=true;f.hp=0;if(k)k.kills=(k.kills||0)+1;FULL_processCurseDeath(f);
+  const enemyKill=!!(k&&k.side!==f.side);f.dead=true;f.hp=0;if(enemyKill)k.kills=(k.kills||0)+1;FULL_processCurseDeath(f);
 
   if(deathEffectsEnabled){const n=f.ability.name;
     if(n==='Void Devastation'&&k){let remaining=f.stored||0;for(const e of FULL_alive(foes)){if(remaining<=0)break;const hp=e.hp,res=FULL_effectDamage(f,e,remaining,r,ctx,true,{explosion:true});remaining=Math.max(0,remaining-hp);if(!FULL_fab(f))break}}
-    else if(n==='Raise Dead'){const dead=team.filter(x=>x.dead&&x!==f);if(dead.length){const q=pick(r,dead);q.dead=false;q.hp=Math.max(1,Math.floor(q.max*(FULL_fab(f)?.25:.20)));q._entered=false;if(FULL_fab(f))FULL_addBlock(q,1)}}
+    else if(n==='Raise Dead'){const dead=team.filter(x=>x.dead&&x!==f);if(dead.length){const q=pick(r,dead);q.dead=false;q.hp=Math.max(1,Math.floor(q.max*(FULL_fab(f)?.25:.20)));FULL_queueRevive(q,team);if(FULL_fab(f))FULL_addBlock(q,1)}}
     else if(n==='Goblin Rally'){const baseHp=f.max,baseAtk=f.atk;for(let i=0;i<2;i++){const g=FULL_spawn('Goblin',flags(),f.side,team,FULL_fab(f)?baseHp*.25:Math.max(1,(BY.get('Goblin')?stats(BY.get('Goblin'),flags()).hp:10)),FULL_fab(f)?baseAtk*.25:Math.max(1,(BY.get('Goblin')?stats(BY.get('Goblin'),flags()).atk:5)));if(FULL_fab(f))FULL_init(g)}}
     else if(n==='Luck Incarnate'){const nx=FULL_next(f,team);if(nx){const q=FULL_fab(f)?(.77+r()*1):(.07+r()*.70);nx.max+=Math.floor(f.max*q);nx.hp+=Math.floor(f.max*q);nx.atk+=Math.floor(f.atk*q)}}
     else if(n==='Dragon Mother')for(const x of FULL_alive(team).filter(FULL_isDragon)){x.atk=Math.floor(x.atk*(1+(FULL_fab(f)?.60:.40)));if(FULL_fab(f))buffHp(x,.25)}
@@ -74,7 +74,7 @@ function die(f,k,team,foes,r,ctx){
   }
 
   if(f._deathWhisper?.source){const s=f._deathWhisper.source;if(s&&!s.dead&&s.hp>0)FULL_spawn('Ghostly Minion',flags(),s.side,FULL_team(s,ctx),Math.floor(f.max*f._deathWhisper.pct),Math.floor(f.atk*f._deathWhisper.pct))}
-  if(k&&FULL_enabled(k,ctx)){const n=k.ability.name;
+  if(enemyKill&&FULL_enabled(k,ctx)){const n=k.ability.name;
     if(n==='Double Strike'&&FULL_fab(k))heal(k,Math.floor(k.max*.15));
     if(n==='Critical Mass'&&FULL_fab(k)&&k._criticalLost>0){const restore=Math.floor(k._criticalLost*.25);k.atk+=restore;k._criticalLost=Math.max(0,k._criticalLost-restore)}
     if(n==='Starfall Barrage')k.atk=Math.floor(k.atk*1.30);
@@ -86,7 +86,7 @@ function die(f,k,team,foes,r,ctx){
     if(n==='Greed'&&FULL_fab(k)){const q=.05+.05*(k._potsDevoured||0);heal(k,Math.floor(k.max*q))}
     if(n==='Hollow Conscription'){const q=FULL_fab(k)?.55:.40,thr=FULL_spawn(f.card?.name||'Corrupted Thrall',{corrupted:true},k.side,FULL_team(k,ctx),f.max*q,f.atk*q);thr.ability={name:'',desc:''};thr._thrallTurns=FULL_fab(k)?2:1;heal(k,Math.floor(k.max*(FULL_fab(k)?.15:.10)));if(FULL_fab(k))k.atk=Math.floor(k.atk*1.10)}
   }
-  if(k&&k.ability?.name==='Festering Edge'&&FULL_fab(k)&&k._festeringCarry){const nx=FULL_active(foes);if(nx){const c=Math.min(nx.max-1,k._festeringCarry);nx.max=Math.max(1,nx.max-c);nx.hp=Math.min(nx.hp,nx.max)}k._festeringCarry=0}
+  if(enemyKill&&k.ability?.name==='Festering Edge'&&FULL_fab(k)&&k._festeringCarry){const nx=FULL_active(foes);if(nx){const c=Math.min(nx.max-1,k._festeringCarry);nx.max=Math.max(1,nx.max-c);nx.hp=Math.min(nx.hp,nx.max)}k._festeringCarry=0}
   for(const crawler of team.filter(x=>!x.dead&&x.ability?.name==='Borrowed Mask')){const prev=FULL_prevAny(crawler,team);if(prev===f&&f.ability?.name){crawler.ability={...f.ability};crawler._borrowed=true}}
   FULL_triggerRevenants(f,team,r);FULL_reindex(team);return true;
 }

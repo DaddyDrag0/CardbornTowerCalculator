@@ -20,7 +20,7 @@ die=function(f,k,team,foes,r,ctx){
   k.ability={...(savedAbility||{}),name:'Starfall Barrage (growth handled)'};
   const died=COSMIC_baseDie(f,k,team,foes,r,ctx);
   k.ability=savedAbility;
-  if(died)COSMIC_addKillGrowth(k);
+  if(died&&k.side!==f.side)COSMIC_addKillGrowth(k);
   return died;
 };
 

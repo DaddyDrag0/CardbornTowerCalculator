@@ -16,8 +16,8 @@ die=function(f,k,team,foes,r,ctx){
   FULL_init(f);
 
   // The first lethal/death trigger is allowed to resolve normally. Any later death of the
-  // same physical card still kills the card, but its death-triggered ability is suppressed.
-  if(f._onDeathUsed){
+  // same physical card suppresses its death trigger, except Soul Reservoir's explicit two revivals.
+  if(f._onDeathUsed&&!(f.ability?.name==='Soul Reservoir'&&f.revives<2)){
     const savedAbility=f.ability;
     f.ability={...(savedAbility||{}),name:`${savedAbility?.name||'Ability'} (death spent)`};
     const result=RULE_baseDie(f,k,team,foes,r,ctx);

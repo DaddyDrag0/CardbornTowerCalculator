@@ -23,6 +23,13 @@ function FULL_enemyTeam(f,ctx=FULL_CONTEXT){if(!ctx)return[];const own=ctx.team(
 function FULL_active(team){return (team||[]).find(x=>x&&!x.dead&&x.hp>0)||null}
 function FULL_alive(team){return (team||[]).filter(x=>x&&!x.dead&&x.hp>0)}
 function FULL_reindex(team){(team||[]).forEach((x,i)=>{if(x)x.index=i})}
+// Revived physical cards return at the back of the battle deck (player-confirmed).
+// Keep their spent entry/death triggers and all existing combat state.
+function FULL_queueRevive(f,team){
+  const i=(team||[]).indexOf(f);if(i<0)return;
+  team.splice(i,1);team.push(f);f.dead=false;f._entered=false;FULL_reindex(team);
+}
+
 function FULL_prev(f,team){const i=(team||[]).indexOf(f);for(let j=i-1;j>=0;j--){const x=team[j];if(x&&!x.dead&&x.hp>0)return x}return null}
 function FULL_next(f,team){const i=(team||[]).indexOf(f);for(let j=i+1;j<(team||[]).length;j++){const x=team[j];if(x&&!x.dead&&x.hp>0)return x}return null}
 function FULL_lastAlive(team){const a=FULL_alive(team);return a[a.length-1]||null}

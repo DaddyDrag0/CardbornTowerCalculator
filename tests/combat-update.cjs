@@ -189,6 +189,71 @@ test('Choir shatters heal allies and cap its additive Void World damage bonus',(
   assert.equal(ally._voidChoirBonus,.50);assert.ok(Math.abs(ally.atk-1500)<=4);assert.equal(ally.hp,10000);
 });
 
+for(const fabled of [false,true])test(`Necromancer queues the same fallen card after the remaining allies (${fabled?'Fabled':'normal'})`,()=>{
+  const a=fighter(t,'Berserker'),n=fighter(t,'Necromancer','p',10000,1000,fabled,1),s=fighter(t,'Storm Giant','p',10000,1000,false,2),f=fighter(t,'Flare King','p',10000,1000,false,3),e=fighter(t,'Peasant','e');
+  const own=[a,n,s,f],foes=[e],ctx=context(t,own,foes);
+  a.hp=0;a.dead=true;a._onEntryUsed=true;a._onDeathUsed=true;n.hp=0;
+  assert.equal(t.die(n,e,own,foes,()=>0,ctx),true);
+  assert.deepEqual(own,[n,s,f,a]);assert.equal(t.FULL_active(own),s);
+  assert.equal(a.hp,fabled?2500:2000);assert.equal(a.dead,false);assert.equal(a.index,3);
+  assert.equal(a._onEntryUsed,true);assert.equal(a._onDeathUsed,true);
+  assert.equal(new Set(own).size,4);if(fabled)assert.equal(a.shields,1);
+  s.hp=0;t.die(s,e,own,foes,()=>0,ctx);t.enter(f,e,own,foes,()=>0,ctx);
+  f.hp=0;t.die(f,e,own,foes,()=>0,ctx);
+  assert.equal(t.FULL_active(own),a);assert.equal(a.atk,1200);assert.equal(a.max,12000);
+});
+test('Janus queues every fallen ally once and retains the current frontline',()=>{
+  const a=fighter(t,'Peasant'),b=fighter(t,'Knight'),j=fighter(t,'Janus, God of Beginnings'),s=fighter(t,'Storm Giant'),e=fighter(t,'Peasant','e'),own=[a,b,j,s],foes=[e],ctx=context(t,own,foes);
+  a.dead=b.dead=true;a.hp=b.hp=0;j.turn=3;
+  t.turnStart(j,e,own,foes,()=>.99,ctx);
+  assert.deepEqual(own,[j,s,a,b]);assert.equal(t.FULL_active(own),j);assert.equal(a.hp,5000);assert.equal(b.hp,5000);
+  a.dead=true;a.hp=0;t.turnStart(j,e,own,foes,()=>.99,ctx);assert.equal(a.dead,true);
+});
+test('Melodic Revival keeps the singer active and still supplies its normal attack',()=>{
+  const card=t.CARDS.find(c=>c.ability.name==='Melodic Revival'),a=fighter(t,'Peasant'),s=fighter(t,card.name),b=fighter(t,'Knight'),e=fighter(t,'Peasant','e'),own=[a,s,b],foes=[e],ctx=context(t,own,foes);
+  a.dead=true;a.hp=0;s.turn=1;
+  const pre=t.turnStart(s,e,own,foes,()=>.99,ctx);
+  assert.deepEqual(own,[s,b,a]);assert.equal(t.FULL_active(own),s);assert.equal(a.hp,5000);assert.equal(pre.attacks,1);
+});
+for(const name of ['Werewolf','The Last Mammoth','Dread Lord'])test(`${name} self-revival queues behind the remaining ally`,()=>{
+  const a=fighter(t,name),b=fighter(t,'Peasant'),e=fighter(t,'Peasant','e',100000,1000),own=[a,b],foes=[e],ctx=context(t,own,foes);
+  a.hp=0;assert.equal(t.die(a,e,own,foes,()=>0,ctx),false);
+  assert.deepEqual(own,[b,a]);assert.equal(t.FULL_active(own),b);assert.ok(a.hp>0);
+  a.hp=0;assert.equal(t.die(a,e,own,foes,()=>0,ctx),true);assert.equal(a.hp,0);
+});
+test('Soul Reservoir can revive twice, but cannot revive a third time',()=>{
+  const card=t.CARDS.find(c=>c.ability.name==='Soul Reservoir'),a=fighter(t,card.name),b=fighter(t,'Peasant'),e=fighter(t,'Peasant','e'),own=[a,b],foes=[e],ctx=context(t,own,foes);
+  for(let i=0;i<2;i++){a.hp=0;assert.equal(t.die(a,e,own,foes,()=>0,ctx),false);assert.equal(a.hp,5000);assert.equal(own.at(-1),a)}
+  a.hp=0;assert.equal(t.die(a,e,own,foes,()=>0,ctx),true);assert.equal(a.revives,2);
+});
+for(const abilityName of ['Imperial Advance','Starfall Barrage','Cataclysmic Devour'])test(`${abilityName} does not reward killing an ally`,()=>{
+  const card=t.CARDS.find(c=>c.ability.name===abilityName),a=fighter(t,card.name,'p',10000,1000,true),b=fighter(t,'Peasant'),e=fighter(t,'Peasant','e'),own=[a,b],foes=[e],ctx=context(t,own,foes);
+  b.hp=0;t.die(b,a,own,foes,()=>0,ctx);
+  assert.equal(a.kills||0,0);assert.equal(a.atk,1000);assert.equal(a.max,10000);assert.equal(a._chainAttack?.length||0,0);
+});
+
+test('A card revived by pre-attack lightning cannot attack from the back',()=>{
+  const a=fighter(t,'Werewolf','p',100,1000,true),b=fighter(t,'Knight','p',10000,1000),e=fighter(t,'Storm King','e',500,500);
+  const out=t.battle([a,b],[e],()=>0,'',true);
+  const attacks=out.debug.events.filter(x=>x.type==='turn'&&x.team==='Allies');
+  assert.equal(out.win,true);assert.equal(attacks.length,1);assert.equal(attacks[0].card,'Knight');
+});
+test('Every normal and Fabled card completes combat with finite, consistent fighter state',()=>{
+  for(const fabled of [false,true])for(const [i,card] of t.CARDS.entries()){
+    const own=[fighter(t,card.name,'p',5000,500,fabled),fighter(t,'Peasant','p',5000,500)],foes=[fighter(t,t.CARDS[(i+37)%t.CARDS.length].name,'e',5000,500,fabled),fighter(t,'Peasant','e',5000,500)];
+    const out=t.battle(own,foes,t.rng32(i+123),'');
+    assert.ok(Number.isFinite(out.actions),card.name);
+    for(const f of [...own,...foes]){assert.ok([f.hp,f.max,f.atk].every(Number.isFinite),card.name);assert.ok(f.max>0,card.name);assert.equal(f.dead,f.hp<=0,card.name)}
+    if(out.win)assert.ok(t.FULL_active(own)&&!t.FULL_active(foes),card.name);
+  }
+});
+test('An entry attack caused by a frontline push interrupts the dead attacker',()=>{
+  const card=t.CARDS.find(c=>c.ability.name==='Unstoppable Force'),a=fighter(t,card.name,'p',100,100),front=fighter(t,'Peasant','e',1000,10),rogue=fighter(t,'Rogue','e',50,1000);
+  const out=t.battle([a],[front,rogue],()=>.99,'',true);
+  assert.equal(out.win,false);assert.equal(rogue.dead,false);
+  assert.equal(out.debug.events.filter(x=>x.type==='turn'&&x.team==='Allies').length,0);
+});
+
 async function worker(){
   const messages=[],sandbox={console:{info(){},error(...args){throw Error(JSON.stringify(args))}},setTimeout,clearTimeout,TextEncoder,TextDecoder,URL,Math,Map,Set,Promise,postMessage:m=>messages.push(m)};
   sandbox.self=sandbox;sandbox.fetch=async url=>({ok:true,text:async()=>read(String(url).replace(/^\.\//,'').split('?')[0])});

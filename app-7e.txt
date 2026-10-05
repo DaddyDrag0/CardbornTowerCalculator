@@ -3,10 +3,10 @@ turnStart=function(f,t,own,foes,r,ctx){
   const out=FULL_turnStartCore(f,t,own,foes,r,ctx);FULL_CONTEXT=ctx;
   if(f&&FULL_enabled(f,ctx)&&f.ability?.name==='Renewal of a New Cycle'&&f.turn>=4&&!ctx._janusUsed?.[f.side]){
     ctx._janusUsed=ctx._janusUsed||{p:false,e:false};ctx._janusUsed[f.side]=true;const pct=FULL_fab(f)?.65:.50;
-    for(const x of own){if(x.dead){x.dead=false;x.hp=Math.max(1,Math.floor(x.max*pct));x._entered=false}}
+    for(const x of [...own]){if(x.dead){x.hp=Math.max(1,Math.floor(x.max*pct));FULL_queueRevive(x,own)}}
   }
   if(f&&FULL_enabled(f,ctx)&&f.ability?.name==='Melodic Revival'&&f.turn%2===0){
-    const dead=own.filter(x=>x.dead);if(dead.length){const x=dead[0];x.dead=false;x.hp=Math.max(1,Math.floor(x.max*(FULL_fab(f)?.60:.50)));if(FULL_fab(f))x.atk=Math.floor(x.atk*1.20);x._entered=false}
+    const dead=own.filter(x=>x.dead);if(dead.length){const x=dead[0];x.dead=false;x.hp=Math.max(1,Math.floor(x.max*(FULL_fab(f)?.60:.50)));if(FULL_fab(f))x.atk=Math.floor(x.atk*1.20);FULL_queueRevive(x,own)}
     else{const e=FULL_active(foes);if(e)FULL_effectDamage(f,e,Math.floor(f.max*(FULL_fab(f)?1.50:1)),r,ctx,true,{explosion:true})}
   }
   return out;
@@ -71,10 +71,10 @@ battle=function(pt,et,r,cid,debug=false){
     const queue=[];for(let i=0;i<attacks;i++)queue.push({mult:baseMult,kind:'base',baseIndex:i,baseTotal:attacks});
     if(actor._extraTurnAfterRevive){actor._extraTurnAfterRevive=false;queue.push({mult:1,kind:'reviveBonus'})}
     let qIndex=0,romeoStart=actor._romeoProcs||0;
-    while(qIndex<queue.length&&qIndex<24){const item=queue[qIndex++];target=FULL_active(foes);if(!target)break;FULL_ensureEntry(foes,own,r,ctx,events,turn,pt,et);target=FULL_active(foes);if(!target)break;
+    while(qIndex<queue.length&&qIndex<24){if(actor.dead||actor.hp<=0||FULL_active(own)!==actor)break;const item=queue[qIndex++];target=FULL_active(foes);if(!target)break;FULL_ensureEntry(foes,own,r,ctx,events,turn,pt,et);target=FULL_active(foes);if(!target)break;
       if(target.ability?.name==='Unshaken Form'&&item.kind==='base'&&(item.baseIndex||0)>0)continue;
-      FULL_beforeHitAuras(actor,target,own,foes,r,ctx,events,turn);FULL_resolveTeamDeaths(pt,et,target,r,ctx,events,turn);if(actor.dead||actor.hp<=0)break;target=FULL_active(foes);if(!target)break;
-      const prep=FULL_prepareHit(actor,target,foes,r,ctx,item.baseIndex||0,item.baseTotal||1,item.mult);prep.meta.attackKind=item.kind;target=prep.target||target;if(prep.meta.unstoppablePush&&target&&!target._entered){target._entered=true;const es=FULL_snapshot(pt,et);enter(target,actor,foes,own,r,ctx);FULL_logAbility(events,turn,target,'On entry',es,pt,et);FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn);target=FULL_active(foes)||target}const raw=Math.max(0,Math.floor(actor.atk*prep.mult+prep.flat)),defBefore=target.hp,atkBefore=actor.hp;
+      FULL_beforeHitAuras(actor,target,own,foes,r,ctx,events,turn);FULL_resolveTeamDeaths(pt,et,target,r,ctx,events,turn);if(actor.dead||actor.hp<=0||FULL_active(own)!==actor)break;target=FULL_active(foes);if(!target)break;
+      const prep=FULL_prepareHit(actor,target,foes,r,ctx,item.baseIndex||0,item.baseTotal||1,item.mult);prep.meta.attackKind=item.kind;target=prep.target||target;if(prep.meta.unstoppablePush&&target&&!target._entered){target._entered=true;const es=FULL_snapshot(pt,et);enter(target,actor,foes,own,r,ctx);FULL_logAbility(events,turn,target,'On entry',es,pt,et);FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn);target=FULL_active(foes)||target}if(actor.dead||actor.hp<=0||FULL_active(own)!==actor)break;const raw=Math.max(0,Math.floor(actor.atk*prep.mult+prep.flat)),defBefore=target.hp,atkBefore=actor.hp;
       FULL_logEvent(events,{turn,type:'turn',team:FULL_teamName(actor),card:actor.card.name,detail:`vs ${target.card.name} | attacker ${Math.floor(actor.hp)}/${Math.floor(actor.max)} HP ${Math.floor(actor.atk)} ATK | defender ${Math.floor(target.hp)}/${Math.floor(target.max)} HP ${Math.floor(target.atk)} ATK`});
       const snap=FULL_snapshot(pt,et),dealt=damage(actor,target,raw,r,ctx,prep.ignore,{...prep.meta,direct:true});actions++;const actual=ctx._lastDamageTarget||target;let killed=false;if(actual.hp<=0&&!actual.dead)killed=die(actual,actor,FULL_team(actual,ctx),FULL_enemyTeam(actual,ctx),r,ctx);FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn);if(killed){changes++;FULL_logEvent(events,{turn,type:'death',team:FULL_teamName(actual),card:actual.card.name,detail:`Defeated by ${actor.card.name} · ${Math.floor(dealt)} damage`})}else if(actual.hp>0&&defBefore>0&&actual===target&&target.hp>0&&target.hp!==defBefore&&debug&&raw!==dealt)FULL_logAbility(events,turn,actual,'Defense interaction',snap,pt,et,[`incoming ${raw} → ${dealt}`]);
       const afterSnap=FULL_snapshot(pt,et);after(actor,actual,dealt,own,foes,r,ctx,killed,{...prep.meta,mult:prep.mult,flat:prep.flat,targetWasFrozen:prep.meta.targetWasFrozen});FULL_logAbility(events,turn,actor,'After attack',afterSnap,pt,et,killed?['enemy defeated']:[]);FULL_resolveTeamDeaths(pt,et,actor,r,ctx,events,turn);
