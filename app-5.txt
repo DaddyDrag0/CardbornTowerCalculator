@@ -32,9 +32,23 @@ window.__cardbornImgFallback=function(el){
 };
 img=function(c){return PATCH_imageSources(c)[0]||''};
 portrait=function(c,cls='mini-portrait'){
-  const srcs=PATCH_imageSources(c),u=srcs[0]||'',fallbacks=esc(JSON.stringify(srcs.slice(1))),l=esc((c?.name||'?')[0]);
-  return`<span class="${cls}"><span class="fallback-letter">${l}</span>${u?`<img src="${u}" data-fallbacks="${fallbacks}" alt="" loading="lazy" onerror="window.__cardbornImgFallback(this)">`:''}</span>`;
+  const srcs=PATCH_imageSources(c),u=srcs[0]||'',ids=PATCH_cardImageIds(c),fallbacks=esc(JSON.stringify(srcs.slice(1))),l=esc((c?.name||'?')[0]);
+  return`<span class="${cls}"><span class="fallback-letter">${l}</span>${u?`<img src="${u}" data-thumb-ids="${ids.join(',')}" data-fallbacks="${fallbacks}" alt="" loading="lazy" onerror="window.__cardbornImgFallback(this)">`:''}</span>`;
 };
+// If the Halloween thumbnail batch resolves after the screen renders, swap just
+// the missing card portraits. Never reload the page or poll the image API.
+window.addEventListener('cardborn-thumbnails-ready',()=>{
+  const map=window.CARDBORN_THUMBNAILS||{};
+  for(const el of document.querySelectorAll('img[data-thumb-ids]')){
+    const ids=(el.dataset.thumbIds||'').split(',');
+    const found=ids.map(id=>map[id]).find(Boolean);
+    if(!found||el.src===found)continue;
+    const old=el.getAttribute('src');
+    el.dataset.fallbacks=JSON.stringify([old,...JSON.parse(el.dataset.fallbacks||'[]')].filter(Boolean));
+    el.style.display='';
+    el.src=found;
+  }
+});
 
 const PATCH_baseSave=save;
 save=function(){
