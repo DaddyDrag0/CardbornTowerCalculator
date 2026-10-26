@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cardborn Weekly Endless Tower — Hollow Harvest</title>
+<meta name="theme-color" content="#14191f">
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;background:#10171e;color:#e8eff5;line-height:1.5}
+main{max-width:1040px;padding:24px 18px 70px;margin:auto}a{color:#a9d6ff}
+h1{font-size:clamp(1.5rem,4vw,2.25rem);margin:14px 0 6px}h2{font-size:1.22rem;margin:0 0 16px}
+p{color:#bdcad5}.muted{color:#a5b6c5}.eyebrow{color:#e9ad66;font-weight:750;text-transform:uppercase;letter-spacing:.09em;font-size:.75rem}
+.topnav{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:22px}
+.panel{border:1px solid #344657;background:#1b252e;border-radius:18px;padding:20px;margin-top:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.stat{background:#121b23;border:1px solid #30404b;padding:16px;border-radius:12px}
+.stat strong{display:block;font-size:clamp(1.25rem,2.7vw,1.7rem);word-break:break-word}
+.stat span{display:block;font-size:.8rem;color:#acbac6;margin-bottom:6px}
+label{display:block;margin:8px 0;font-weight:650}
+input,select,button{font:inherit;color:inherit;border:1px solid #536777;background:#111b23;border-radius:9px;padding:11px 12px}
+input{width:190px;max-width:100%}button{cursor:pointer;background:#315b46;border-color:#47785a;font-weight:750}
+button:hover{background:#3b7054}
+table{border-collapse:collapse;width:100%;font-size:.91rem}th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #34434f;vertical-align:top}th{color:#a9b9c7}tbody tr:hover{background:#263643}
+.tablewrap{overflow-x:auto}.highlight{background:#314539}
+.notice{border-left:3px solid #e8a34f;padding:10px 12px;background:#242c32;font-size:.9rem}
+.footer{font-size:.85rem;color:#a3b0b9;margin-top:26px}
+</style></head><body><main>
+<nav class="topnav"><a href="./index.html">← Back to Infinite Dungeon calculator</a><span class="eyebrow">Hollow Harvest update</span></nav>
+<header><h1>🎃 Weekly Endless Tower</h1><p>Official client-side floor growth, variants, and potion rewards, extracted from <code>WeeklyTowerDefinitions</code>. This page is a floor-stat and reward planner, not a full combat simulation.</p></header>
+<section class="panel"><h2>Floor stat calculator</h2><label for="floor">Floor number</label><input id="floor" type="number" min="1" max="6000" step="1" value="50">
+<div class="grid" style="margin-top:17px">
+ <div class="stat"><span>Enemy HP</span><strong id="hp">—</strong></div>
+ <div class="stat"><span>Enemy damage</span><strong id="damage">—</strong></div>
+ <div class="stat"><span>Enemy variant</span><strong id="variant">—</strong></div>
+ <div class="stat"><span>Floor type</span><strong id="boss">—</strong></div>
+</div><p id="floorhint" class="muted"></p><div id="reward" class="notice" aria-live="polite"></div>
+</section>
+<section class="panel"><h2>All milestone potion rewards</h2><p>After floor 150, rewards repeat every 10 floors: 1 Fabled Potion and 1 Legendary Luck Potion; multiples of 50 additionally give 2 Holiday Rift Potions and 1 Mythic Luck Potion.</p><div class="tablewrap"><table><thead><tr><th>Floor</th><th>Potions</th></tr></thead><tbody id="milestones"></tbody></table></div></section>
+<section class="panel"><h2>Weekly leaderboard rewards</h2><p>The top 100 players earn additional potions at the weekly reset.</p><div class="tablewrap"><table><thead><tr><th>Rank</th><th>Bonus potions</th></tr></thead><tbody id="ranks"></tbody></table></div></section>
+<section class="panel"><h2>How floors work</h2>
+<p><b>HP:</b> floor(200 × 1.12<sup>floor − 1</sup> × boss modifier), minimum 1. On every 10th floor, the boss modifier is 1.3. <b>Damage:</b> floor(HP / 2), minimum 1.</p>
+<p><b>Enemy lineup:</b> selected from the 128 regular Battle Tower floors using the weekly seed, with a ±3-floor offset through floor 128. Beyond floor 128, the seed picks from the last 33 tower lineups. The exact lineup is not inferred by this page.</p>
+<p><b>Variants:</b> Shiny on floors 1–24, Awakened 25–49, Fabled 50–74, Fabled Corrupted 75–99, Void 100–149, and Fabled Void from floor 150 onward.</p>
+<p class="notice">Reset note: the game's client module uses a fixed 604,800-second weekly interval anchored at 05:00 UTC. The announcement describes Sunday midnight Central Time; the fixed UTC anchor can shift local clock time when daylight saving time changes.</p>
+</section>
+<p class="footer">Source: HALLOWEEN Cardborn RNG.rbxl — WeeklyTowerDefinitions and BattleTowerDefinitions, inspected 26 October 2026. Server-side completion logic is not contained in the client save.</p>
+</main>
+<script>
+'use strict';
+const milestones=[
+[5,{LuckPotion:2}],[10,{LuckPotionLarge:1,SpeedPotion:1}],[15,{LesserShinyPotion:1,LesserFabledPotion:1}],
+[20,{LuckPotionLarge:2,LesserAwakenedPotion:1}],[25,{HolidayRiftPotion:1,LesserFabledPotion:1}],
+[30,{ShinyPotion:1,SpeedPotionLarge:1}],[40,{LuckPotionLegendary:1,FabledPotion:1}],
+[50,{HolidayRiftPotion:2,AwakenedPotion:1,ShinyPotion:1}],[60,{LuckPotionLegendary:2,FabledPotion:1}],
+[70,{ShinyPotionLegendary:1,LesserFabledPotion:2}],[80,{HolidayRiftPotion:2,AwakenedPotionLegendary:1}],
+[90,{LuckPotionLegendary:2,FabledPotion:2}],[100,{HolidayRiftPotion:3,LuckPotionMythic:1,FabledPotion:2}],
+[110,{ShinyPotionLegendary:2,FabledPotion:1}],[120,{LuckPotionMythic:1,HolidayRiftPotion:2}],
+[130,{AwakenedPotionMythic:1,FabledPotion:2}],[140,{ShinyPotionMythic:1,HolidayRiftPotion:2}],
+[150,{LuckPotionMythic:2,FabledPotion:3,HolidayRiftPotion:3}]];
+const ranks=[
+['#1',{HolidayRiftPotion:5,FabledPotion:5,LuckPotionMythic:3}],
+['#2–3',{HolidayRiftPotion:4,FabledPotion:4,LuckPotionMythic:2}],
+['#4–10',{HolidayRiftPotion:3,FabledPotion:3,LuckPotionMythic:1}],
+['#11–25',{HolidayRiftPotion:2,FabledPotion:2,LuckPotionLegendary:2}],
+['#26–100',{HolidayRiftPotion:1,FabledPotion:1,LuckPotionLegendary:1}]
+];
+const aliases={LuckPotion:'Luck Potion',LuckPotionLarge:'Large Luck Potion',LuckPotionLegendary:'Legendary Luck Potion',LuckPotionMythic:'Mythic Luck Potion',SpeedPotion:'Speed Potion',SpeedPotionLarge:'Large Speed Potion',ShinyPotion:'Shiny Potion',ShinyPotionLegendary:'Legendary Shiny Potion',ShinyPotionMythic:'Mythic Shiny Potion',AwakenedPotion:'Awakened Potion',AwakenedPotionLegendary:'Legendary Awakened Potion',AwakenedPotionMythic:'Mythic Awakened Potion',LesserShinyPotion:'Lesser Shiny Potion',LesserFabledPotion:'Lesser Fabled Potion',LesserAwakenedPotion:'Lesser Awakened Potion',FabledPotion:'Fabled Potion',HolidayRiftPotion:'Holiday Rift Potion'};
+const pretty=v=>Object.entries(v).map(([k,n])=>n+' × '+(aliases[k]||k)).join(' · ');
+const m=new Map(milestones);
+function prize(f){if(m.has(f))return m.get(f);if(f<=150||f%10)return null;return Object.assign({FabledPotion:1,LuckPotionLegendary:1},f%50===0?{HolidayRiftPotion:2,LuckPotionMythic:1}:{})}
+function variant(f){return f<=24?'Shiny':f<=49?'Awakened':f<=74?'Fabled':f<=99?'Fabled Corrupted':f<=149?'Void':'Fabled Void'}
+function number(v){return Number.isFinite(v)?new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(v):'Beyond JS numeric range'}
+const floorEl=document.querySelector('#floor');
+function render(){const f=Math.max(1,Math.min(6000,Math.floor(Number(floorEl.value)||1))),hp=Math.max(1,Math.floor(200*Math.pow(1.12,f-1)*(f%10===0?1.3:1))),dmg=Math.max(1,Math.floor(hp/2));document.querySelector('#hp').textContent=number(hp);document.querySelector('#damage').textContent=number(dmg);document.querySelector('#variant').textContent=variant(f);document.querySelector('#boss').textContent=f%10===0?'Boss · 1.3× HP':'Normal';const p=prize(f);const next=Array.from({length:100},(_,i)=>i+f+1).find(x=>prize(x));document.querySelector('#reward').textContent=(p?'Floor '+f+' reward: '+pretty(p):'No potion milestone at floor '+f)+'. Next milestone: floor '+next+' ('+pretty(prize(next))+').';document.querySelector('#floorhint').textContent='12% compounded HP growth per floor · damage is half HP · weekly variant bands are fixed.';for(const tr of document.querySelectorAll('#milestones tr'))tr.classList.toggle('highlight',Number(tr.dataset.floor)===f)}
+document.querySelector('#milestones').innerHTML=milestones.map(([f,p])=>'<tr data-floor="'+f+'"><th>'+f+'</th><td>'+pretty(p)+'</td></tr>').join('');
+document.querySelector('#ranks').innerHTML=ranks.map(([r,p])=>'<tr><th>'+r+'</th><td>'+pretty(p)+'</td></tr>').join('');
+floorEl.addEventListener('input',render);render();
+</script></body></html>
