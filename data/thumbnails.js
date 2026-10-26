@@ -302,3 +302,56 @@ window.CARDBORN_THUMBNAILS={
   "121194758569245": "https://tr.rbxcdn.com/180DAY-39441d36e4a164236589cc1260254853/420/420/Image/Png/noFilter",
   "106378852385855": "https://tr.rbxcdn.com/180DAY-c7ba59e243dcec5eee2e6afae551e8ac/420/420/Image/Png/noFilter"
 };
+
+
+// Halloween art resolves through the public thumbnail service into the same
+// tr.rbxcdn.com URLs used by the existing 160 cards. Roblox asset ids (rbxassetid://)
+// are NOT browser image URLs. One batch request per browser cache expiry; no polling.
+(()=>{
+  const ids=["136167764660997","136388244139267","75553713607776","109206187148060","102312351729432","103273751015406","76690168839882","136828914326412","110584399862751","120059093371874","71529257256645","134086767539958","139387773234957","81580156426762","100140596357433","129242276775231","123220118484415","92014913355469","127611232019789","96490945353736"];
+  const cacheKey='cardborn-hollow-harvest-images-v1';
+  const map=window.CARDBORN_THUMBNAILS;
+  const notify=()=>{
+    try{window.dispatchEvent(new Event('cardborn-thumbnails-ready'))}catch(_){}
+  };
+  try{
+    const saved=JSON.parse(localStorage.getItem(cacheKey)||'null');
+    if(saved&&Date.now()-saved.time<86400000&&saved.urls){
+      for(const id of ids)if(typeof saved.urls[id]==='string'&&/^https:\/\/[^/]+\.rbxcdn\.com\//.test(saved.urls[id]))map[id]=saved.urls[id];
+    }
+  }catch(_){}
+  window.CARDBORN_THUMBNAIL_READY=(async()=>{
+    const missing=ids.filter(id=>!map[id]);
+    if(!missing.length){notify();return map}
+    const query=new URLSearchParams({
+      assetIds:missing.join(','),returnPolicy:'PlaceHolder',
+      size:'420x420',format:'Png',isCircular:'false'
+    }).toString();
+    // Roblox blocks third-party CORS in browsers. This public proxy adds CORS
+    // headers; a direct Roblox API request is a secondary attempt.
+    for(const origin of ['https://thumbnails.roproxy.com','https://thumbnails.roblox.com']){
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),4500);
+      try{
+        const response=await fetch(origin+'/v1/assets?'+query,{signal:controller.signal,cache:'no-store'});
+        if(!response.ok)continue;
+        const json=await response.json();
+        for(const item of json?.data||[]){
+          const id=String(item?.targetId||'');
+          if(!missing.includes(id)||item?.state!=='Completed'||!item?.imageUrl)continue;
+          const url=new URL(item.imageUrl);
+          if(url.protocol==='https:'&&(/(^|\.)rbxcdn\.com$/).test(url.hostname))map[id]=url.href;
+        }
+        if(missing.some(id=>map[id])){
+          try{localStorage.setItem(cacheKey,JSON.stringify({time:Date.now(),urls:Object.fromEntries(ids.filter(id=>map[id]).map(id=>[id,map[id]]))}))}catch(_){}
+          notify();
+          return map;
+        }
+      }catch(_){
+        // Card tiles keep their letter fallback if external thumbnail APIs fail.
+      }finally{clearTimeout(timer)}
+    }
+    notify();
+    return map;
+  })();
+})();
