@@ -1,0 +1,83 @@
+// Hollow Harvest combat abilities, modeled from the 2026-10-26 client descriptions.
+// The exported client does not contain server-side battle ordering, so auras,
+// summons and revive precedence follow the existing FULL simulator rules.
+const HH_enterBase=enter;
+enter=function(f,t,own,foes,r,ctx){
+  const result=HH_enterBase(f,t,own,foes,r,ctx);
+  if(f&&FULL_enabled(f,ctx)&&f.ability?.name==='Harvest of Souls'&&!f._hhHarvestEntry){
+    f._hhHarvestEntry=true;
+    const pct=FULL_fab(f)?.25:.15;
+    for(const ally of FULL_alive(own))if(ally.card?.eventLock==='HollowHarvest')buff(ally,pct);
+  }
+  return result;
+};
+
+const HH_turnBase=turnStart;
+turnStart=function(f,t,own,foes,r,ctx){
+  FULL_CONTEXT=ctx;
+  if(f&&FULL_enabled(f,ctx)){
+    const n=f.ability?.name,upcoming=(f.turn||0)+1;
+    if(n==='Candlelit Grin'&&upcoming<=(FULL_fab(f)?4:3)){
+      for(const e of [...FULL_alive(foes)])FULL_effectDamage(f,e,Math.floor(e.max*(FULL_fab(f)?.09:.06)),r,ctx,true,{burn:true});
+    }
+    if(n==='Veil Between Worlds'){
+      for(const e of [...FULL_alive(foes)])FULL_effectDamage(f,e,Math.floor(e.max*(FULL_fab(f)?.08:.05)),r,ctx,true,{aura:true});
+    }
+  }
+  const out=HH_turnBase(f,t,own,foes,r,ctx);
+  if(!f||!FULL_enabled(f,ctx))return out;
+  const n=f.ability?.name;
+  if(n==='Wail'){
+    const target=out.target&&!out.target.dead?out.target:FULL_active(foes);
+    if(f.turn%2===0&&target&&r()<(FULL_fab(f)?.60:.40))FULL_stun(target,1);
+    if(target&&(target.skip>0||target.frozen>0))out.mult*=1+(FULL_fab(f)?.50:.30);
+  }
+  if(n==='Harvest of Souls'&&f.turn%3===0){
+    const max=FULL_fab(f)?3:2;
+    if((f._hhHarvestSummons||0)<max){
+      const card=BY.get("Jack-o'-Lantern");
+      if(card){const summon=fighter(card,flags(),f.side,own.length);FULL_init(summon);own.push(summon);FULL_reindex(own);f._hhHarvestSummons=(f._hhHarvestSummons||0)+1;}
+    }
+  }
+  return out;
+};
+
+const HH_dieBase=die;
+die=function(f,k,team,foes,r,ctx){
+  if(f&&!f.dead&&f.hp<=0&&!f._hhVeilUsed){
+    const samhain=FULL_alive(team).find(x=>x!==f&&FULL_deathEnabled(x,ctx)&&x.ability?.name==='Veil Between Worlds');
+    if(samhain){
+      f._hhVeilUsed=true;
+      f.hp=Math.max(1,Math.floor(f.max*(FULL_fab(samhain)?.50:.35)));
+      FULL_queueRevive(f,team);
+      return false;
+    }
+  }
+  const candy=!!(f&&FULL_deathEnabled(f,ctx)&&f.ability?.name==='Sugar Rush');
+  const killed=HH_dieBase(f,k,team,foes,r,ctx);
+  if(killed&&candy){
+    for(const ally of FULL_alive(team))heal(ally,Math.floor(ally.max*(FULL_fab(f)?.25:.15)));
+    const next=FULL_active(team);
+    if(next)next.atk=Math.max(1,Math.floor(next.atk*(1+(FULL_fab(f)?.35:.20))));
+  }
+  return killed;
+};
+
+const HH_primaryBase=FULL_afterPrimaryHit;
+FULL_afterPrimaryHit=function(actor,target,dealt,killed,own,foes,r,ctx,hitMeta,queue){
+  const out=HH_primaryBase(actor,target,dealt,killed,own,foes,r,ctx,hitMeta,queue);
+  if(!actor||!FULL_enabled(actor,ctx)||actor.ability?.name!=='Reaping Ride')return out;
+  const grant=()=>{
+    const maximum=FULL_fab(actor)?4:3;
+    if((actor._hhReapKills||0)>=maximum)return;
+    actor._hhReapKills=(actor._hhReapKills||0)+1;
+    buff(actor,FULL_fab(actor)?.18:.12);
+  };
+  if(killed)grant();
+  if(actor._firstAttack&&!actor._hhReapingFirst){
+    actor._hhReapingFirst=true;
+    const last=FULL_lastAlive(foes);
+    if(last){const result=FULL_effectDamage(actor,last,Math.floor(actor.atk*(FULL_fab(actor)?2:1.5)),r,ctx);if(result?.killed)grant();}
+  }
+  return out;
+};
